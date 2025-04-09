@@ -44,5 +44,3 @@ declare interface stylesType {
 }
 
 declare interface summaryType {}
-
-declare interface yearsDataType {}
