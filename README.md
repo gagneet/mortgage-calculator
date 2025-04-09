@@ -1,11 +1,12 @@
 # Variable Rate Mortgage Calculator
 
-This application is a React-based web implementation of the Variable Rate Mortgage Calculator I originally developed in VBA. 
+This application is a React-based web implementation of the Variable Rate Mortgage Calculator I originally developed in VBA.
 It allows users to calculate mortgage payments with variable interest rates and extra payment options, as well as view yearly investment data from the attached Excel workbook.
 
 ## Features
 
 ### Calculator Page
+
 - Input basic loan details (amount, interest rate, term)
 - Configure interest rate changes at specific months (as we are taking variable rate, it may change according to the Central Bank's wimps)
 - Add one-time extra payments (these shall be consistent throughout the year and may be bank fees [negative])
@@ -15,6 +16,7 @@ It allows users to calculate mortgage payments with variable interest rates and 
 - Interactive chart showing loan balance over time
 
 ### Yearly Data Page
+
 - View data from the 30 yearly sheets in the Excel workbook
 - Switch between years using a dropdown selector
 
@@ -24,13 +26,16 @@ To run this application locally:
 
 1. Clone the repository
 2. Install dependencies:
-   ```
-   npm install
-   ```
+
+```bash
+npm install
+```
+
 3. Start the development server:
-   ```
-   npm start
-   ```
+
+```bash
+npm start
+```
 
 ## Required Packages
 
@@ -55,6 +60,7 @@ To run this application locally:
 ### Excel Data Processing
 
 The application uses SheetJS to read and process the Excel workbook. The YearlyDataView component:
+
 1. Loads the Excel file
 2. Extracts the year sheets
 3. Processes each sheet into a structured format
@@ -79,6 +85,7 @@ The application uses SheetJS to read and process the Excel workbook. The YearlyD
 ## Differences from the VBA Implementation
 
 This React implementation maintains all the core calculation functionality of the original VBA version while adding:
+
 - Modern web interface with responsive design
 - Interactive charts
 - Tabbed interface for viewing different aspects of the calculation results
@@ -87,6 +94,7 @@ This React implementation maintains all the core calculation functionality of th
 ## Original VBA Code
 
 The original VBA code included these key functions:
+
 - `SetupMortgageCalculator`: Setting up the Excel worksheet layout
 - `CalculateMortgage`: The main calculation function
 - `CalculateEMI`: For calculating monthly payment amount

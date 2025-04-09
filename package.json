@@ -22,5 +22,11 @@
   "bugs": {
     "url": "https://github.com/gagneet/investment-mortgage-calculator/issues"
   },
-  "homepage": "https://github.com/gagneet/investment-mortgage-calculator#readme"
+  "homepage": "https://github.com/gagneet/investment-mortgage-calculator#readme",
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-router-dom": "^7.5.0",
+    "recharts": "^2.15.2",
+    "sheetjs": "^2.0.0"
+  }
 }

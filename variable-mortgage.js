@@ -815,23 +815,72 @@ const YearlyDataView = () => {
           // Convert sheet to JSON (headers from first row)
           const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
           
-          // Extract headers and data, ensuring they're simple values
-          const headers = (jsonData[0] || []).map(header => {
-            if (header instanceof Date) return header.toLocaleDateString();
-            if (header === null || header === undefined) return '';
-            return String(header);
-          });
+          // Find the actual header row (which may not be the first row)
+          // Look for rows with month names (July, August, etc.)
+          let headerRowIndex = -1;
           
-          const data = jsonData.slice(1).filter(row => row.some(cell => cell !== null)).map(row => 
-            row.map(cell => {
-              // Handle each cell to ensure it's suitable for rendering
-              if (cell instanceof Date) return cell;
-              if (cell === null || cell === undefined) return '';
-              return cell;
-            })
-          );
+          for (let i = 0; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            if (!row) continue;
+            
+            // Check if this row contains month names
+            const monthNames = ['July', 'August', 'September', 'October', 'November', 'December', 
+                               'January', 'February', 'March', 'April', 'May', 'June'];
+            
+            // Count how many month names are in this row
+            const monthCount = row.filter(cell => 
+              typeof cell === 'string' && monthNames.includes(cell)
+            ).length;
+            
+            // If we found at least 6 month names, consider this the header row
+            if (monthCount >= 6) {
+              headerRowIndex = i;
+              break;
+            }
+          }
           
-          yearsData[yearSheet] = { headers, data };
+          // If we found a header row
+          if (headerRowIndex >= 0) {
+            // Extract headers from the identified header row
+            const headers = jsonData[headerRowIndex].map(header => {
+              if (header instanceof Date) return header.toLocaleDateString();
+              if (header === null || header === undefined) return '';
+              return String(header);
+            });
+            
+            // Extract data rows from after the header row
+            const data = jsonData.slice(headerRowIndex + 1)
+              .filter(row => row && row.length > 0 && row.some(cell => cell !== null))
+              .map(row => 
+                row.map(cell => {
+                  // Handle each cell to ensure it's suitable for rendering
+                  if (cell instanceof Date) return cell;
+                  if (cell === null || cell === undefined) return '';
+                  return cell;
+                })
+              );
+            
+            yearsData[yearSheet] = { headers, data };
+          } else {
+            // Fallback to default behavior if no header row with months was found
+            const headers = (jsonData[0] || []).map(header => {
+              if (header instanceof Date) return header.toLocaleDateString();
+              if (header === null || header === undefined) return '';
+              return String(header);
+            });
+            
+            const data = jsonData.slice(1)
+              .filter(row => row && row.length > 0 && row.some(cell => cell !== null))
+              .map(row => 
+                row.map(cell => {
+                  if (cell instanceof Date) return cell;
+                  if (cell === null || cell === undefined) return '';
+                  return cell;
+                })
+              );
+            
+            yearsData[yearSheet] = { headers, data };
+          }
         });
 
         setYearlyData(yearsData);
