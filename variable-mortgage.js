@@ -815,9 +815,21 @@ const YearlyDataView = () => {
           // Convert sheet to JSON (headers from first row)
           const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
           
-          // Extract headers and data
-          const headers = jsonData[0] || [];
-          const data = jsonData.slice(1).filter(row => row.some(cell => cell !== null));
+          // Extract headers and data, ensuring they're simple values
+          const headers = (jsonData[0] || []).map(header => {
+            if (header instanceof Date) return header.toLocaleDateString();
+            if (header === null || header === undefined) return '';
+            return String(header);
+          });
+          
+          const data = jsonData.slice(1).filter(row => row.some(cell => cell !== null)).map(row => 
+            row.map(cell => {
+              // Handle each cell to ensure it's suitable for rendering
+              if (cell instanceof Date) return cell;
+              if (cell === null || cell === undefined) return '';
+              return cell;
+            })
+          );
           
           yearsData[yearSheet] = { headers, data };
         });
@@ -858,7 +870,7 @@ const YearlyDataView = () => {
             <tr>
               {validColumns.map((col, idx) => (
                 <th key={`header-${idx}`} className={styles.tableHeaderCell}>
-                  {col.header}
+                  {typeof col.header === 'string' ? col.header : String(col.header)}
                 </th>
               ))}
             </tr>
@@ -897,7 +909,8 @@ const YearlyDataView = () => {
       return value.toLocaleDateString();
     }
     
-    return value.toString();
+    // Ensure we return a string, not an object
+    return String(value);
   };
 
   return (
