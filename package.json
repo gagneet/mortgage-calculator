@@ -1,0 +1,26 @@
+{
+  "name": "investment-property",
+  "version": "1.0.0",
+  "description": "Variable Mortgage Calculator",
+  "main": "variable-mortgage.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gagneet/investment-mortgage-calculator.git"
+  },
+  "keywords": [
+    "investments",
+    "property",
+    "mortgage",
+    "variable",
+    "interest-rate"
+  ],
+  "author": "gagneet@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gagneet/investment-mortgage-calculator/issues"
+  },
+  "homepage": "https://github.com/gagneet/investment-mortgage-calculator#readme"
+}
