@@ -15,10 +15,13 @@ It allows users to calculate mortgage payments with variable interest rates and 
 - View amortization schedule, rate change summary, and payment summaries
 - Interactive chart showing loan balance over time
 
-### Yearly Data Page
-
-- View data from the 30 yearly sheets in the Excel workbook
-- Switch between years using a dropdown selector
+### Investment Projections Page
+- View mortgage information projected over 30 years
+- Customize investment parameters (property value, rental income, expenses, etc.)
+- See monthly breakdowns for each year
+- View investment performance metrics (ROI, cash flow, equity growth)
+- Interactive charts showing projections over time
+- All calculations based on the mortgage parameters from the calculator page
 
 ## Setup and Installation
 
@@ -49,22 +52,19 @@ npm start
 ### Main Components
 
 1. **MortgageCalculator**: The main calculator implementation with all the input forms and calculation logic
-2. **YearlyDataView**: Displays yearly data from the Excel workbook
-3. **Layout**: Navigation layout with router configuration
+2. **YearlyDataView**: Displays yearly investment projections based on the mortgage calculations
+3. **Layout**: Navigation layout with state-based page switching
 
 ### Key Utility Functions
 
 - `calculateEMI`: Calculates the Equated Monthly Installment based on loan amount, interest rate, and term
 - `calculateMortgage`: Performs the full amortization schedule calculation
+- `calculateMortgageForYears`: Extends mortgage calculations for 30-year projections
+- `generateYearlyReports`: Creates yearly investment reports based on mortgage data
 
-### Excel Data Processing
+### Data Sharing Between Components
 
-The application uses SheetJS to read and process the Excel workbook. The YearlyDataView component:
-
-1. Loads the Excel file
-2. Extracts the year sheets
-3. Processes each sheet into a structured format
-4. Presents the data in a filterable table
+The application uses React state to share loan data between the mortgage calculator and the yearly projections view. When the user changes loan parameters and calculates the mortgage, this data is passed to the yearly projections component to update the investment calculations.
 
 ## Using the Calculator
 
@@ -76,11 +76,14 @@ The application uses SheetJS to read and process the Excel workbook. The YearlyD
 6. Click "Calculate" to see the results
 7. View the amortization schedule, loan summary, and charts
 
-## Viewing Yearly Data
+## Viewing Investment Projections
 
 1. Navigate to the "Yearly Data" page
-2. Use the dropdown to select the year you want to view
-3. Browse the table data for the selected year
+2. Enter investment parameters (property value, rental income, expenses, etc.)
+3. See the 30-year investment performance chart
+4. Use the dropdown to select a specific year to view
+5. Review monthly details and yearly summaries
+6. Check the cash flow chart for the selected year
 
 ## Differences from the VBA Implementation
 
@@ -89,7 +92,8 @@ This React implementation maintains all the core calculation functionality of th
 - Modern web interface with responsive design
 - Interactive charts
 - Tabbed interface for viewing different aspects of the calculation results
-- Improved navigation between calculator and yearly data
+- Investment projections based on mortgage calculations
+- No dependency on loading the actual Excel file - all calculations are done dynamically
 
 ## Original VBA Code
 
@@ -99,7 +103,7 @@ The original VBA code included these key functions:
 - `CalculateMortgage`: The main calculation function
 - `CalculateEMI`: For calculating monthly payment amount
 
-This JavaScript implementation preserves the same calculation logic while adapting it to a web interface.
+This JavaScript implementation preserves the same calculation logic while adapting it to a web interface and extending it with investment projections.
 
 ## License
 

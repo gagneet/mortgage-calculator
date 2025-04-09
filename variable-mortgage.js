@@ -1,4 +1,689 @@
-import React, { useState, useEffect } from 'react';
+// Yearly Data Component for displaying yearly projected data based on mortgage calculations
+const YearlyDataView = () => {
+  // State to track loan parameters (will be filled by context or props in a real app)
+  const [loanParams, setLoanParams] = useState({
+    loanAmount: 300000,
+    initialRate: 4.5,
+    loanTermYears: 30,
+    rateChanges: [
+      { month: 13, newRate: 4.25 },
+      { month: 25, newRate: 4.0 },
+      { month: 61, newRate: 4.75 }
+    ],
+    extraPayments: [
+      { month: 1, amount: 50 },
+      { month: 6, amount: 5000 },
+      { month: 12, amount: 1000 }
+    ],
+    regularExtraAmount: 100,
+    regularStartMonth: 1,
+    regularEndMonth: 360,
+    propertyValue: 500000,
+    annualPropertyValueIncrease: 3, // percentage
+    rentalIncome: 2000,
+    annualRentalIncomeIncrease: 2, // percentage
+    propertyTax: 3000,
+    insurance: 1200,
+    maintenanceCost: 1500,
+    otherExpenses: 600
+  });
+
+  const [selectedYear, setSelectedYear] = useState(1);
+  const [yearOptions] = useState(Array.from({length: 30}, (_, i) => i + 1));
+  const [loading, setLoading] = useState(false);
+  
+  // Generate mortgage calculation for all 30 years
+  const mortgageCalculations = useMemo(() => {
+    const calculations = calculateMortgageForYears(loanParams);
+    return calculations;
+  }, [loanParams]);
+  
+  // Generate yearly summaries from mortgage calculations
+  const yearlyData = useMemo(() => {
+    return generateYearlyReports(mortgageCalculations, loanParams);
+  }, [mortgageCalculations, loanParams]);
+  
+  // Handle year selection change
+  const handleYearChange = (e) => {
+    setSelectedYear(parseInt(e.target.value));
+  };
+  
+  // Format currency values
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+  };
+  
+  // Format percentage values
+  const formatPercentage = (value) => {
+    return new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 2 }).format(value / 100);
+  };
+  
+  // Calculate mortgage for all 30 years
+  function calculateMortgageForYears(params) {
+    const {
+      loanAmount,
+      initialRate,
+      loanTermYears,
+      rateChanges,
+      extraPayments,
+      regularExtraAmount,
+      regularStartMonth,
+      regularEndMonth
+    } = params;
+    
+    // Basic loan parameters
+    const totalMonths = loanTermYears * 12;
+    const initialEMI = calculateEMI(loanAmount, initialRate, totalMonths);
+    
+    // Process all extra payments
+    let allExtraPayments = [...extraPayments];
+    
+    // Add regular extra payment if defined
+    if (regularExtraAmount > 0) {
+      for (let i = regularStartMonth; i <= regularEndMonth; i++) {
+        // Check if there's already a payment for this month
+        const existingIndex = allExtraPayments.findIndex(ep => ep.month === i);
+        
+        if (existingIndex !== -1) {
+          // Add to existing payment
+          allExtraPayments[existingIndex].amount += parseFloat(regularExtraAmount);
+        } else {
+          // Add new payment
+          allExtraPayments.push({ month: i, amount: parseFloat(regularExtraAmount) });
+        }
+      }
+    }
+    
+    // Sort the combined extra payments by month
+    allExtraPayments.sort((a, b) => a.month - b.month);
+    
+    // Calculate the amortization schedule
+    let remainingPrincipal = loanAmount;
+    let currentMonth = 1;
+    let totalInterestPaid = 0;
+    let totalExtraPayments = 0;
+    let currentRate = initialRate;
+    let remainingMonths = totalMonths;
+    let currentEMI = initialEMI;
+    let schedule = [];
+    
+    // Process month by month until loan is fully paid or for 30 years (360 months)
+    while (remainingPrincipal > 0.01 && remainingMonths > 0 && currentMonth <= 360) {
+      // Check if interest rate changes this month
+      const rateChange = rateChanges.find(rc => rc.month === currentMonth);
+      if (rateChange) {
+        // Update the current interest rate
+        currentRate = rateChange.newRate;
+        
+        // Recalculate the EMI based on the new rate but keeping the same remaining months
+        currentEMI = calculateEMI(remainingPrincipal, currentRate, remainingMonths);
+      }
+      
+      // Calculate interest portion with current rate
+      const interestAmount = remainingPrincipal * (currentRate / 100 / 12);
+      
+      // Calculate principal portion (EMI minus interest)
+      const principalAmount = Math.min(currentEMI - interestAmount, remainingPrincipal);
+      
+      // Check if there are any extra payments this month
+      const extraPayment = allExtraPayments.find(ep => ep.month === currentMonth);
+      let extraPaymentAmount = 0;
+      
+      if (extraPayment) {
+        extraPaymentAmount = Math.min(extraPayment.amount, remainingPrincipal - principalAmount);
+        totalExtraPayments += extraPaymentAmount;
+      }
+      
+      // Update remaining principal after both regular and extra payments
+      remainingPrincipal = remainingPrincipal - (principalAmount + extraPaymentAmount);
+      
+      // Update total interest paid
+      totalInterestPaid += interestAmount;
+      
+      // Add to schedule
+      schedule.push({
+        month: currentMonth,
+        EMI: currentEMI,
+        principalPaid: principalAmount,
+        interestPaid: interestAmount,
+        extraPayment: extraPaymentAmount,
+        remainingPrincipal: remainingPrincipal,
+        interestRate: currentRate,
+        remainingMonths: remainingMonths
+      });
+      
+      currentMonth += 1;
+      remainingMonths -= 1;
+      
+      // If the loan is paid off earlier than expected
+      if (remainingPrincipal <= 0.01) {
+        break;
+      }
+    }
+    
+    return schedule;
+  }
+  
+  // Generate yearly reports for all 30 years
+  function generateYearlyReports(mortgageCalculations, params) {
+    const {
+      loanAmount,
+      propertyValue,
+      annualPropertyValueIncrease,
+      rentalIncome,
+      annualRentalIncomeIncrease,
+      propertyTax,
+      insurance,
+      maintenanceCost,
+      otherExpenses
+    } = params;
+    
+    // Group calculations by year
+    const yearlyReports = [];
+    
+    for (let year = 1; year <= 30; year++) {
+      // Get months for this year (1-12 for year 1, 13-24 for year 2, etc.)
+      const startMonth = (year - 1) * 12 + 1;
+      const endMonth = year * 12;
+      
+      // Get mortgage data for this year
+      const yearData = mortgageCalculations.filter(
+        entry => entry.month >= startMonth && entry.month <= endMonth
+      );
+      
+      if (yearData.length === 0) {
+        // If loan is paid off before this year, create empty record
+        yearlyReports.push({
+          year,
+          monthlyData: [],
+          loanPaidOff: true,
+          summary: {
+            principalPaid: 0,
+            interestPaid: 0,
+            totalPaid: 0,
+            remainingPrincipal: 0,
+            currentPropertyValue: calculatePropertyValue(propertyValue, year),
+            equity: calculatePropertyValue(propertyValue, year),
+            rentalIncome: calculateYearlyRentalIncome(rentalIncome, year),
+            expenses: calculateYearlyExpenses(propertyTax, insurance, maintenanceCost, otherExpenses)
+          }
+        });
+        continue;
+      }
+      
+      // Calculate yearly summaries
+      const principalPaid = yearData.reduce((sum, month) => sum + month.principalPaid + month.extraPayment, 0);
+      const interestPaid = yearData.reduce((sum, month) => sum + month.interestPaid, 0);
+      const totalPaid = principalPaid + interestPaid;
+      const remainingPrincipal = yearData[yearData.length - 1].remainingPrincipal;
+      
+      // Calculate property value for this year
+      const currentPropertyValue = calculatePropertyValue(propertyValue, year);
+      
+      // Calculate equity (property value minus remaining principal)
+      const equity = currentPropertyValue - remainingPrincipal;
+      
+      // Calculate rental income for this year (with annual increase)
+      const yearlyRentalIncome = calculateYearlyRentalIncome(rentalIncome, year);
+      
+      // Calculate expenses for this year
+      const yearlyExpenses = calculateYearlyExpenses(propertyTax, insurance, maintenanceCost, otherExpenses);
+      
+      // Create monthly breakdown
+      const monthlyData = [];
+      
+      // Add a row for each month (July to June)
+      const monthNames = ['July', 'August', 'September', 'October', 'November', 'December', 
+                          'January', 'February', 'March', 'April', 'May', 'June'];
+      
+      for (let i = 0; i < 12; i++) {
+        const monthData = yearData[i];
+        
+        if (!monthData) continue; // Skip if no data for this month
+        
+        // Monthly rental income (yearly divided by 12)
+        const monthlyRental = yearlyRentalIncome / 12;
+        
+        // Monthly expenses (yearly divided by 12)
+        const monthlyExpenses = yearlyExpenses / 12;
+        
+        // Cash flow (rental income minus mortgage payment minus expenses)
+        const cashFlow = monthlyRental - monthData.EMI - monthlyExpenses;
+        
+        monthlyData.push({
+          month: monthNames[i],
+          payment: monthData.EMI,
+          principal: monthData.principalPaid,
+          interest: monthData.interestPaid,
+          extraPayment: monthData.extraPayment,
+          remainingPrincipal: monthData.remainingPrincipal,
+          rentalIncome: monthlyRental,
+          expenses: monthlyExpenses,
+          cashFlow: cashFlow
+        });
+      }
+      
+      // Create year report
+      yearlyReports.push({
+        year,
+        monthlyData,
+        loanPaidOff: false,
+        summary: {
+          principalPaid,
+          interestPaid,
+          totalPaid,
+          remainingPrincipal,
+          currentPropertyValue,
+          equity,
+          rentalIncome: yearlyRentalIncome,
+          expenses: yearlyExpenses,
+          netIncome: yearlyRentalIncome - yearlyExpenses - totalPaid,
+          roi: ((yearlyRentalIncome - yearlyExpenses - totalPaid) / loanAmount) * 100
+        }
+      });
+    }
+    
+    return yearlyReports;
+  }
+  
+  // Calculate property value with annual increase
+  function calculatePropertyValue(initialValue, year) {
+    return initialValue * Math.pow(1 + (loanParams.annualPropertyValueIncrease / 100), year - 1);
+  }
+  
+  // Calculate yearly rental income with annual increase
+  function calculateYearlyRentalIncome(monthlyRental, year) {
+    const annualRental = monthlyRental * 12;
+    return annualRental * Math.pow(1 + (loanParams.annualRentalIncomeIncrease / 100), year - 1);
+  }
+  
+  // Calculate yearly expenses
+  function calculateYearlyExpenses(propertyTax, insurance, maintenance, other) {
+    return propertyTax + insurance + maintenance + other;
+  }
+  
+  // Render the yearly data table
+  const renderYearlyDataTable = () => {
+    if (!yearlyData || !yearlyData[selectedYear - 1]) {
+      return <p>No data available for selected year</p>;
+    }
+    
+    const yearReport = yearlyData[selectedYear - 1];
+    
+    if (yearReport.loanPaidOff) {
+      return (
+        <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+          <h3 className="text-xl font-semibold text-green-700 mb-2">Loan Fully Paid Off!</h3>
+          <p className="mb-4">Your loan was completely paid off before this year.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-3 bg-white rounded shadow">
+              <p className="font-semibold">Property Value</p>
+              <p className="text-xl">{formatCurrency(yearReport.summary.currentPropertyValue)}</p>
+            </div>
+            <div className="p-3 bg-white rounded shadow">
+              <p className="font-semibold">Equity</p>
+              <p className="text-xl">{formatCurrency(yearReport.summary.equity)}</p>
+            </div>
+            <div className="p-3 bg-white rounded shadow">
+              <p className="font-semibold">Annual Rental Income</p>
+              <p className="text-xl">{formatCurrency(yearReport.summary.rentalIncome)}</p>
+            </div>
+            <div className="p-3 bg-white rounded shadow">
+              <p className="font-semibold">Annual Expenses</p>
+              <p className="text-xl">{formatCurrency(yearReport.summary.expenses)}</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div>
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-3 bg-blue-50 rounded shadow">
+            <p className="font-semibold">Property Value</p>
+            <p className="text-xl">{formatCurrency(yearReport.summary.currentPropertyValue)}</p>
+          </div>
+          <div className="p-3 bg-blue-50 rounded shadow">
+            <p className="font-semibold">Equity</p>
+            <p className="text-xl">{formatCurrency(yearReport.summary.equity)}</p>
+          </div>
+          <div className="p-3 bg-green-50 rounded shadow">
+            <p className="font-semibold">Yearly Income</p>
+            <p className="text-xl">{formatCurrency(yearReport.summary.rentalIncome)}</p>
+          </div>
+          <div className="p-3 bg-red-50 rounded shadow">
+            <p className="font-semibold">Yearly Expenses</p>
+            <p className="text-xl">{formatCurrency(yearReport.summary.expenses)}</p>
+          </div>
+          <div className="p-3 bg-yellow-50 rounded shadow">
+            <p className="font-semibold">Principal Paid</p>
+            <p className="text-xl">{formatCurrency(yearReport.summary.principalPaid)}</p>
+          </div>
+          <div className="p-3 bg-yellow-50 rounded shadow">
+            <p className="font-semibold">Interest Paid</p>
+            <p className="text-xl">{formatCurrency(yearReport.summary.interestPaid)}</p>
+          </div>
+          <div className="p-3 bg-indigo-50 rounded shadow">
+            <p className="font-semibold">Net Income</p>
+            <p className="text-xl">{formatCurrency(yearReport.summary.netIncome)}</p>
+          </div>
+          <div className="p-3 bg-indigo-50 rounded shadow">
+            <p className="font-semibold">ROI</p>
+            <p className="text-xl">{yearReport.summary.roi.toFixed(2)}%</p>
+          </div>
+        </div>
+        
+        <h3 className="text-lg font-semibold mb-3">Monthly Breakdown - Year {selectedYear}</h3>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Principal</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interest</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Extra Payment</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Remaining Principal</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rental Income</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expenses</th>
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cash Flow</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {yearReport.monthlyData.map((month, index) => (
+                <tr key={`month-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="px-3 py-2 text-sm text-gray-500">{month.month}</td>
+                  <td className="px-3 py-2 text-sm text-gray-500">{formatCurrency(month.payment)}</td>
+                  <td className="px-3 py-2 text-sm text-gray-500">{formatCurrency(month.principal)}</td>
+                  <td className="px-3 py-2 text-sm text-gray-500">{formatCurrency(month.interest)}</td>
+                  <td className="px-3 py-2 text-sm text-gray-500">{formatCurrency(month.extraPayment)}</td>
+                  <td className="px-3 py-2 text-sm text-gray-500">{formatCurrency(month.remainingPrincipal)}</td>
+                  <td className="px-3 py-2 text-sm text-gray-500">{formatCurrency(month.rentalIncome)}</td>
+                  <td className="px-3 py-2 text-sm text-gray-500">{formatCurrency(month.expenses)}</td>
+                  <td className="px-3 py-2 text-sm text-gray-500">{formatCurrency(month.cashFlow)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+  
+  // Render charts for the selected year
+  const renderYearlyCharts = () => {
+    if (!yearlyData || !yearlyData[selectedYear - 1] || yearlyData[selectedYear - 1].loanPaidOff) {
+      return null;
+    }
+    
+    const yearReport = yearlyData[selectedYear - 1];
+    
+    // Prepare data for cash flow chart
+    const cashFlowData = yearReport.monthlyData.map(month => ({
+      month: month.month,
+      rental: month.rentalIncome,
+      expenses: month.expenses,
+      mortgage: month.payment,
+      cashFlow: month.cashFlow
+    }));
+    
+    return (
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold mb-3">Monthly Cash Flow - Year {selectedYear}</h3>
+        <div className="h-64 md:h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={cashFlowData}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="year" />
+              <YAxis yAxisId="left" tickFormatter={(value) => `${Math.round(value/1000)}k`} />
+              <YAxis yAxisId="right" orientation="right" tickFormatter={(value) => `${value.toFixed(1)}%`} />
+              <Tooltip 
+                formatter={(value, name) => {
+                  if (name === 'roi') return [`${value.toFixed(2)}%`, name];
+                  return [`${value.toLocaleString()}`, name];
+                }}
+              />
+              <Legend />
+              <Line yAxisId="left" type="monotone" dataKey="propertyValue" name="Property Value" stroke="#10B981" />
+              <Line yAxisId="left" type="monotone" dataKey="equity" name="Equity" stroke="#3B82F6" />
+              <Line yAxisId="left" type="monotone" dataKey="debt" name="Remaining Debt" stroke="#EF4444" />
+              <Line yAxisId="left" type="monotone" dataKey="netIncome" name="Net Income" stroke="#8B5CF6" />
+              <Line yAxisId="right" type="monotone" dataKey="roi" name="ROI (%)" stroke="#F59E0B" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold text-center my-4 text-blue-700">Investment Projections by Year</h1>
+      
+      {/* Investment Parameters Form */}
+      {renderInvestmentParamsForm()}
+      
+      {/* Investment Performance Chart */}
+      {renderInvestmentPerformanceChart()}
+      
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        {loading ? (
+          <p className="text-center">Loading data...</p>
+        ) : (
+          <>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Year:</label>
+              <select 
+                className="w-full md:w-48 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                value={selectedYear}
+                onChange={handleYearChange}
+              >
+                {yearOptions.map(year => (
+                  <option key={year} value={year}>Year {year}</option>
+                ))}
+              </select>
+            </div>
+            
+            <h2 className="text-lg font-semibold mb-3">Year {selectedYear} Data</h2>
+            
+            {/* Yearly Data Table */}
+            {renderYearlyDataTable()}
+            
+            {/* Yearly Charts */}
+            {renderYearlyCharts()}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Share loan data between calculator and yearly view
+const App = () => {
+  const [currentPage, setCurrentPage] = useState('calculator');
+  const [loanData, setLoanData] = useState({
+    loanAmount: 300000,
+    initialRate: 4.5,
+    loanTermYears: 30,
+    // More loan parameters can be added here
+  });
+
+  const handleNavigate = (page) => {
+    setCurrentPage(page);
+  };
+
+  // Update loan data from calculator
+  const updateLoanData = (data) => {
+    setLoanData({...loanData, ...data});
+  };
+
+  return (
+    <Layout onNavigate={handleNavigate} currentPage={currentPage}>
+      {currentPage === 'calculator' && <MortgageCalculator loanData={loanData} updateLoanData={updateLoanData} />}
+      {currentPage === 'yearlyData' && <YearlyDataView loanData={loanData} />}
+    </Layout>
+  );
+};
+
+export default App;="month" />
+              <YAxis tickFormatter={(value) => `${Math.round(value)}`} />
+              <Tooltip formatter={(value) => [`${value.toFixed(2)}`, '']} />
+              <Legend />
+              <Line type="monotone" dataKey="rental" name="Rental Income" stroke="#10B981" />
+              <Line type="monotone" dataKey="expenses" name="Expenses" stroke="#EF4444" />
+              <Line type="monotone" dataKey="mortgage" name="Mortgage" stroke="#3B82F6" />
+              <Line type="monotone" dataKey="cashFlow" name="Cash Flow" stroke="#8B5CF6" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    );
+  };
+
+  // Investment parameter form
+  const renderInvestmentParamsForm = () => {
+    return (
+      <div className="mb-6 bg-white rounded-lg shadow-md p-4">
+        <h3 className="text-lg font-semibold mb-3">Investment Parameters</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Loan Amount ($)</label>
+            <input 
+              type="number" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+              value={loanParams.loanAmount} 
+              onChange={(e) => setLoanParams({...loanParams, loanAmount: parseFloat(e.target.value)})} 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Interest Rate (%)</label>
+            <input 
+              type="number" 
+              step="0.01" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+              value={loanParams.initialRate} 
+              onChange={(e) => setLoanParams({...loanParams, initialRate: parseFloat(e.target.value)})} 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Loan Term (Years)</label>
+            <input 
+              type="number" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+              value={loanParams.loanTermYears} 
+              onChange={(e) => setLoanParams({...loanParams, loanTermYears: parseInt(e.target.value)})} 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Property Value ($)</label>
+            <input 
+              type="number" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+              value={loanParams.propertyValue} 
+              onChange={(e) => setLoanParams({...loanParams, propertyValue: parseFloat(e.target.value)})} 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Property Value Growth (%/year)</label>
+            <input 
+              type="number" 
+              step="0.1" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+              value={loanParams.annualPropertyValueIncrease} 
+              onChange={(e) => setLoanParams({...loanParams, annualPropertyValueIncrease: parseFloat(e.target.value)})} 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Rental Income ($)</label>
+            <input 
+              type="number" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+              value={loanParams.rentalIncome} 
+              onChange={(e) => setLoanParams({...loanParams, rentalIncome: parseFloat(e.target.value)})} 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Rental Income Growth (%/year)</label>
+            <input 
+              type="number" 
+              step="0.1" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+              value={loanParams.annualRentalIncomeIncrease} 
+              onChange={(e) => setLoanParams({...loanParams, annualRentalIncomeIncrease: parseFloat(e.target.value)})} 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Property Tax ($/year)</label>
+            <input 
+              type="number" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+              value={loanParams.propertyTax} 
+              onChange={(e) => setLoanParams({...loanParams, propertyTax: parseFloat(e.target.value)})} 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Insurance ($/year)</label>
+            <input 
+              type="number" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+              value={loanParams.insurance} 
+              onChange={(e) => setLoanParams({...loanParams, insurance: parseFloat(e.target.value)})} 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Maintenance ($/year)</label>
+            <input 
+              type="number" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+              value={loanParams.maintenanceCost} 
+              onChange={(e) => setLoanParams({...loanParams, maintenanceCost: parseFloat(e.target.value)})} 
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Other Expenses ($/year)</label>
+            <input 
+              type="number" 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+              value={loanParams.otherExpenses} 
+              onChange={(e) => setLoanParams({...loanParams, otherExpenses: parseFloat(e.target.value)})} 
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render investment performance chart for all 30 years
+  const renderInvestmentPerformanceChart = () => {
+    if (!yearlyData || yearlyData.length === 0) {
+      return null;
+    }
+    
+    // Prepare data for performance chart
+    const performanceData = yearlyData.map(year => ({
+      year: year.year,
+      propertyValue: year.summary.currentPropertyValue,
+      equity: year.summary.equity,
+      debt: year.summary.remainingPrincipal,
+      netIncome: year.summary.netIncome,
+      roi: year.summary.roi
+    }));
+    
+    return (
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold mb-3">Investment Performance Over 30 Years</h3>
+        <div className="h-64 md:h-80">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={performanceData}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKeyimport React, { useState, useEffect, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import * as XLSX from 'xlsx';
 
@@ -49,11 +734,11 @@ const calculateEMI = (principal, annualInterestRate, remainingMonths) => {
 };
 
 // Main Calculator Component
-const MortgageCalculator = () => {
+const MortgageCalculator = ({ loanData, updateLoanData }) => {
   // State for loan inputs
-  const [loanAmount, setLoanAmount] = useState(300000);
-  const [initialRate, setInitialRate] = useState(4.5);
-  const [loanTermYears, setLoanTermYears] = useState(30);
+  const [loanAmount, setLoanAmount] = useState(loanData?.loanAmount || 300000);
+  const [initialRate, setInitialRate] = useState(loanData?.initialRate || 4.5);
+  const [loanTermYears, setLoanTermYears] = useState(loanData?.loanTermYears || 30);
   
   // State for rate changes
   const [rateChanges, setRateChanges] = useState([
@@ -339,6 +1024,18 @@ const MortgageCalculator = () => {
     setRateChangeSummary(rateChangeSummary);
     setExtraPaymentSummary(extraPaymentSummary);
     setStagedPaymentSummary(stagedPaymentSummary);
+    
+    // Update loan data in parent component for sharing with yearly view
+    if (updateLoanData) {
+      updateLoanData({
+        loanAmount,
+        initialRate,
+        loanTermYears,
+        rateChanges: validRateChanges,
+        extraPayments: allExtraPayments,
+        schedule
+      });
+    }
   };
   
   // Function to get CSS class for table row based on rate changes and extra payments
