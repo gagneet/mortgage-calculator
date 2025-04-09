@@ -47,177 +47,27 @@ const calculateEMI = (principal, annualInterestRate, remainingMonths) => {
     (Math.pow(1 + monthlyRate, remainingMonths) - 1);
 };
 
-// Main Calculator Component
-const MortgageCalculator = ({ loanData, updateLoanData }) => {
-  // State for loan inputs
-  const [loanAmount, setLoanAmount] = useState(loanData?.loanAmount || 300000);
-  const [initialRate, setInitialRate] = useState(loanData?.initialRate || 4.5);
-  const [loanTermYears, setLoanTermYears] = useState(loanData?.loanTermYears || 30);
-  
-  // State for rate changes
-  const [rateChanges, setRateChanges] = useState([
-    { month: 13, newRate: 4.25 },
-    { month: 25, newRate: 4.0 },
-    { month: 61, newRate: 4.75 }
-  ]);
-  
-  // State for extra payments
-  const [extraPayments, setExtraPayments] = useState([
-    { month: 1, amount: 50 },
-    { month: 6, amount: 5000 },
-    { month: 12, amount: 1000 }
-  ]);
-  
-  // State for regular extra payments
-  const [regularExtraAmount, setRegularExtraAmount] = useState(100);
-  const [regularStartMonth, setRegularStartMonth] = useState(1);
-  const [regularEndMonth, setRegularEndMonth] = useState(360);
-  
-  // State for staged regular extra payments
-  const [stagedPayments, setStagedPayments] = useState([
-    { startMonth: 1, endMonth: 36, amount: 100 },
-    { startMonth: 37, endMonth: 60, amount: 200 },
-    { startMonth: 61, endMonth: 120, amount: 300 }
-  ]);
+// Simple Mortgage Calculator Component
+const App = () => {
+  // Basic state for loan inputs
+  const [loanAmount, setLoanAmount] = useState(300000);
+  const [initialRate, setInitialRate] = useState(4.5);
+  const [loanTermYears, setLoanTermYears] = useState(30);
   
   // State for mortgage calculation results
   const [loanSummary, setLoanSummary] = useState(null);
   const [amortizationSchedule, setAmortizationSchedule] = useState([]);
-  const [rateChangeSummary, setRateChangeSummary] = useState([]);
-  const [extraPaymentSummary, setExtraPaymentSummary] = useState([]);
-  const [stagedPaymentSummary, setStagedPaymentSummary] = useState([]);
-  
-  // State for UI tabs
-  const [activeTab, setActiveTab] = useState('schedule');
-  
-  // Function to add new rate change
-  const addRateChange = () => {
-    setRateChanges([...rateChanges, { month: '', newRate: '' }]);
-  };
-  
-  // Function to add new extra payment
-  const addExtraPayment = () => {
-    setExtraPayments([...extraPayments, { month: '', amount: '' }]);
-  };
-  
-  // Function to add new staged payment
-  const addStagedPayment = () => {
-    setStagedPayments([...stagedPayments, { startMonth: '', endMonth: '', amount: '' }]);
-  };
-  
-  // Function to update rate change
-  const updateRateChange = (index, field, value) => {
-    const updatedRateChanges = [...rateChanges];
-    updatedRateChanges[index][field] = value;
-    setRateChanges(updatedRateChanges);
-  };
-  
-  // Function to update extra payment
-  const updateExtraPayment = (index, field, value) => {
-    const updatedExtraPayments = [...extraPayments];
-    updatedExtraPayments[index][field] = value;
-    setExtraPayments(updatedExtraPayments);
-  };
-  
-  // Function to update staged payment
-  const updateStagedPayment = (index, field, value) => {
-    const updatedStagedPayments = [...stagedPayments];
-    updatedStagedPayments[index][field] = value;
-    setStagedPayments(updatedStagedPayments);
-  };
-  
-  // Function to remove rate change
-  const removeRateChange = (index) => {
-    const updatedRateChanges = [...rateChanges];
-    updatedRateChanges.splice(index, 1);
-    setRateChanges(updatedRateChanges);
-  };
-  
-  // Function to remove extra payment
-  const removeExtraPayment = (index) => {
-    const updatedExtraPayments = [...extraPayments];
-    updatedExtraPayments.splice(index, 1);
-    setExtraPayments(updatedExtraPayments);
-  };
-  
-  // Function to remove staged payment
-  const removeStagedPayment = (index) => {
-    const updatedStagedPayments = [...stagedPayments];
-    updatedStagedPayments.splice(index, 1);
-    setStagedPayments(updatedStagedPayments);
-  };
   
   // Main function to calculate the mortgage
   const calculateMortgage = () => {
-    // Validate and clean input data
-    const validRateChanges = rateChanges
-      .filter(rc => rc.month && rc.newRate)
-      .map(rc => ({ month: parseInt(rc.month), newRate: parseFloat(rc.newRate) }))
-      .sort((a, b) => a.month - b.month);
-    
-    const validExtraPayments = extraPayments
-      .filter(ep => ep.month && ep.amount)
-      .map(ep => ({ month: parseInt(ep.month), amount: parseFloat(ep.amount) }))
-      .sort((a, b) => a.month - b.month);
-    
-    const validStagedPayments = stagedPayments
-      .filter(sp => sp.startMonth && sp.endMonth && sp.amount)
-      .map(sp => ({
-        startMonth: parseInt(sp.startMonth),
-        endMonth: parseInt(sp.endMonth),
-        amount: parseFloat(sp.amount)
-      }))
-      .sort((a, b) => a.startMonth - b.startMonth);
-    
     // Basic loan parameters
     const totalMonths = loanTermYears * 12;
     const initialEMI = calculateEMI(loanAmount, initialRate, totalMonths);
-    
-    // Process all staged payments and add them to extraPayments collection
-    let allExtraPayments = [...validExtraPayments];
-    
-    validStagedPayments.forEach(sp => {
-      const { startMonth, endMonth, amount } = sp;
-      
-      // Add each month's payment to the allExtraPayments array
-      for (let i = startMonth; i <= endMonth; i++) {
-        // Check if there's already a payment for this month
-        const existingIndex = allExtraPayments.findIndex(ep => ep.month === i);
-        
-        if (existingIndex !== -1) {
-          // Add to existing payment
-          allExtraPayments[existingIndex].amount += amount;
-        } else {
-          // Add new payment
-          allExtraPayments.push({ month: i, amount: amount });
-        }
-      }
-    });
-    
-    // Add regular extra payment if defined
-    if (regularExtraAmount > 0) {
-      for (let i = regularStartMonth; i <= regularEndMonth; i++) {
-        // Check if there's already a payment for this month
-        const existingIndex = allExtraPayments.findIndex(ep => ep.month === i);
-        
-        if (existingIndex !== -1) {
-          // Add to existing payment
-          allExtraPayments[existingIndex].amount += parseFloat(regularExtraAmount);
-        } else {
-          // Add new payment
-          allExtraPayments.push({ month: i, amount: parseFloat(regularExtraAmount) });
-        }
-      }
-    }
-    
-    // Sort the combined extra payments by month
-    allExtraPayments.sort((a, b) => a.month - b.month);
     
     // Calculate the amortization schedule
     let remainingPrincipal = loanAmount;
     let currentMonth = 1;
     let totalInterestPaid = 0;
-    let totalExtraPayments = 0;
     let currentRate = initialRate;
     let remainingMonths = totalMonths;
     let currentEMI = initialEMI;
@@ -225,33 +75,14 @@ const MortgageCalculator = ({ loanData, updateLoanData }) => {
     
     // Process month by month until loan is fully paid
     while (remainingPrincipal > 0.01 && remainingMonths > 0) {
-      // Check if interest rate changes this month
-      const rateChange = validRateChanges.find(rc => rc.month === currentMonth);
-      if (rateChange) {
-        // Update the current interest rate
-        currentRate = rateChange.newRate;
-        
-        // Recalculate the EMI based on the new rate but keeping the same remaining months
-        currentEMI = calculateEMI(remainingPrincipal, currentRate, remainingMonths);
-      }
-      
       // Calculate interest portion with current rate
       const interestAmount = remainingPrincipal * (currentRate / 100 / 12);
       
       // Calculate principal portion (EMI minus interest)
       const principalAmount = Math.min(currentEMI - interestAmount, remainingPrincipal);
       
-      // Check if there are any extra payments this month
-      const extraPayment = allExtraPayments.find(ep => ep.month === currentMonth);
-      let extraPaymentAmount = 0;
-      
-      if (extraPayment) {
-        extraPaymentAmount = Math.min(extraPayment.amount, remainingPrincipal - principalAmount);
-        totalExtraPayments += extraPaymentAmount;
-      }
-      
-      // Update remaining principal after both regular and extra payments
-      remainingPrincipal = remainingPrincipal - (principalAmount + extraPaymentAmount);
+      // Update remaining principal
+      remainingPrincipal = remainingPrincipal - principalAmount;
       
       // Update total interest paid
       totalInterestPaid += interestAmount;
@@ -259,13 +90,11 @@ const MortgageCalculator = ({ loanData, updateLoanData }) => {
       // Add to schedule
       schedule.push({
         month: currentMonth,
-        EMI: currentEMI,
+        payment: currentEMI,
         principalPaid: principalAmount,
         interestPaid: interestAmount,
-        extraPayment: extraPaymentAmount,
         remainingPrincipal: remainingPrincipal,
-        interestRate: currentRate,
-        remainingMonths: remainingMonths
+        interestRate: currentRate
       });
       
       currentMonth += 1;
@@ -277,337 +106,94 @@ const MortgageCalculator = ({ loanData, updateLoanData }) => {
       }
     }
     
-    // Calculate interest saved
-    const originalTotalInterest = (initialEMI * totalMonths) - loanAmount;
-    const interestSaved = originalTotalInterest - totalInterestPaid;
+    // Calculate total interest
+    const totalInterest = totalInterestPaid;
     
     // Prepare loan summary
     const summary = {
-      initialLoanAmount: loanAmount,
-      initialInterestRate: initialRate,
-      initialPayment: initialEMI,
-      initialLoanTerm: { years: loanTermYears, months: totalMonths },
-      actualLoanTerm: { years: schedule.length / 12, months: schedule.length },
-      monthsSaved: totalMonths - schedule.length,
-      totalInterestPaid: totalInterestPaid,
-      interestSaved: interestSaved,
-      totalExtraPayments: totalExtraPayments,
-      totalAmountPaid: loanAmount + totalInterestPaid
+      loanAmount: loanAmount,
+      interestRate: initialRate,
+      payment: initialEMI,
+      loanTerm: loanTermYears,
+      totalInterest: totalInterest,
+      totalPaid: loanAmount + totalInterest
     };
-    
-    // Prepare rate change summary
-    const rateChangeSummary = [
-      { month: 1, newRate: initialRate, newPayment: initialEMI },
-      ...validRateChanges.map(rc => {
-        const scheduleEntry = schedule.find(entry => entry.month === rc.month);
-        return {
-          month: rc.month,
-          newRate: rc.newRate,
-          newPayment: scheduleEntry ? scheduleEntry.EMI : calculateEMI(
-            schedule[rc.month - 2].remainingPrincipal,
-            rc.newRate,
-            totalMonths - rc.month + 1
-          )
-        };
-      })
-    ];
-    
-    // Prepare extra payment summary
-    const extraPaymentSummary = schedule
-      .filter(entry => entry.extraPayment > 0)
-      .map(entry => ({
-        month: entry.month,
-        amount: entry.extraPayment,
-        remainingAfter: entry.remainingPrincipal
-      }));
-    
-    // Prepare staged payment summary
-    const stagedPaymentSummary = validStagedPayments.map(sp => {
-      const monthsCovered = Math.min(sp.endMonth, schedule.length) - sp.startMonth + 1;
-      return {
-        startMonth: sp.startMonth,
-        endMonth: sp.endMonth,
-        amount: sp.amount,
-        totalContribution: monthsCovered > 0 ? monthsCovered * sp.amount : 0
-      };
-    });
     
     // Update state with calculation results
     setLoanSummary(summary);
     setAmortizationSchedule(schedule);
-    setRateChangeSummary(rateChangeSummary);
-    setExtraPaymentSummary(extraPaymentSummary);
-    setStagedPaymentSummary(stagedPaymentSummary);
-    
-    // Update loan data in parent component for sharing with yearly view
-    if (updateLoanData) {
-      updateLoanData({
-        loanAmount,
-        initialRate,
-        loanTermYears,
-        rateChanges: validRateChanges,
-        extraPayments: allExtraPayments,
-        schedule
-      });
-    }
-  };
-  
-  // Function to get CSS class for table row based on rate changes and extra payments
-  const getRowClass = (entry, index) => {
-    const isRateChange = index > 0 && entry.interestRate !== amortizationSchedule[index - 1].interestRate;
-    const hasExtraPayment = entry.extraPayment > 0;
-    
-    if (isRateChange && hasExtraPayment) {
-      return 'bg-orange-50 border-b border-gray-200'; // Both rate change and extra payment
-    } else if (isRateChange) {
-      return 'bg-yellow-50 border-b border-gray-200'; // Rate change
-    } else if (hasExtraPayment) {
-      return 'bg-green-50 border-b border-gray-200'; // Extra payment
-    } else {
-      return index % 2 === 0 ? styles.tableRow : styles.tableRowAlt; // Alternate row coloring
-    }
   };
   
   return (
-    <div className={styles.appContainer}>
-      <h1 className={styles.header}>Variable Rate Mortgage Calculator with Extra Payments</h1>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4 text-center">Variable Rate Mortgage Calculator</h1>
       
-      {/* Loan Inputs */}
-      <div className={styles.card}>
-        <div className={styles.formGroup}>
-          <div className={styles.inputGroup}>
-            <label className={styles.label}>Loan Amount:</label>
+      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Loan Amount ($):</label>
             <input 
               type="number" 
-              className={styles.input} 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" 
               value={loanAmount} 
               onChange={(e) => setLoanAmount(parseFloat(e.target.value))} 
             />
           </div>
           
-          <div className={styles.inputGroup}>
-            <label className={styles.label}>Initial Interest Rate (%):</label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Interest Rate (%):</label>
             <input 
               type="number" 
               step="0.01" 
-              className={styles.input} 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" 
               value={initialRate} 
               onChange={(e) => setInitialRate(parseFloat(e.target.value))} 
             />
           </div>
           
-          <div className={styles.inputGroup}>
-            <label className={styles.label}>Loan Term (Years):</label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Loan Term (Years):</label>
             <input 
               type="number" 
-              className={styles.input} 
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" 
               value={loanTermYears} 
               onChange={(e) => setLoanTermYears(parseInt(e.target.value))} 
             />
           </div>
         </div>
         
-        <button className={styles.button} onClick={calculateMortgage}>Calculate</button>
-      </div>
-      
-      {/* Rate Changes */}
-      <div className={styles.card}>
-        <h2 className="text-lg font-semibold mb-3">Interest Rate Changes</h2>
-        <div className="mb-4">
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th className={`${styles.tableHeaderCell} w-1/3`}>Month</th>
-                <th className={`${styles.tableHeaderCell} w-1/3`}>New Rate (%)</th>
-                <th className={`${styles.tableHeaderCell} w-1/3`}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rateChanges.map((rc, index) => (
-                <tr key={`rc-${index}`} className={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
-                  <td className={styles.tableCell}>
-                    <input 
-                      type="number" 
-                      className={styles.input} 
-                      value={rc.month} 
-                      onChange={(e) => updateRateChange(index, 'month', e.target.value)} 
-                    />
-                  </td>
-                  <td className={styles.tableCell}>
-                    <input 
-                      type="number" 
-                      step="0.01" 
-                      className={styles.input} 
-                      value={rc.newRate} 
-                      onChange={(e) => updateRateChange(index, 'newRate', e.target.value)} 
-                    />
-                  </td>
-                  <td className={styles.tableCell}>
-                    <button className="text-red-500" onClick={() => removeRateChange(index)}>Remove</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <button className="mt-2 text-blue-600" onClick={addRateChange}>+ Add Rate Change</button>
-        </div>
-      </div>
-      
-      {/* Extra Payments */}
-      <div className={styles.card}>
-        <h2 className="text-lg font-semibold mb-3">One-time Extra Payments</h2>
-        <div className="mb-4">
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th className={`${styles.tableHeaderCell} w-1/3`}>Month</th>
-                <th className={`${styles.tableHeaderCell} w-1/3`}>Amount ($)</th>
-                <th className={`${styles.tableHeaderCell} w-1/3`}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {extraPayments.map((ep, index) => (
-                <tr key={`ep-${index}`} className={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
-                  <td className={styles.tableCell}>
-                    <input 
-                      type="number" 
-                      className={styles.input} 
-                      value={ep.month} 
-                      onChange={(e) => updateExtraPayment(index, 'month', e.target.value)} 
-                    />
-                  </td>
-                  <td className={styles.tableCell}>
-                    <input 
-                      type="number" 
-                      className={styles.input} 
-                      value={ep.amount} 
-                      onChange={(e) => updateExtraPayment(index, 'amount', e.target.value)} 
-                    />
-                  </td>
-                  <td className={styles.tableCell}>
-                    <button className="text-red-500" onClick={() => removeExtraPayment(index)}>Remove</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <button className="mt-2 text-blue-600" onClick={addExtraPayment}>+ Add Extra Payment</button>
-        </div>
-      </div>
-      
-      {/* Regular Extra Payment */}
-      <div className={styles.card}>
-        <h2 className="text-lg font-semibold mb-3">Regular Extra Payment</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className={styles.inputGroup}>
-            <label className={styles.label}>Monthly Amount:</label>
-            <input 
-              type="number" 
-              className={styles.input} 
-              value={regularExtraAmount} 
-              onChange={(e) => setRegularExtraAmount(e.target.value)} 
-            />
-          </div>
-          <div className={styles.inputGroup}>
-            <label className={styles.label}>Start Month:</label>
-            <input 
-              type="number" 
-              className={styles.input} 
-              value={regularStartMonth} 
-              onChange={(e) => setRegularStartMonth(parseInt(e.target.value))} 
-            />
-          </div>
-          <div className={styles.inputGroup}>
-            <label className={styles.label}>End Month:</label>
-            <input 
-              type="number" 
-              className={styles.input} 
-              value={regularEndMonth} 
-              onChange={(e) => setRegularEndMonth(parseInt(e.target.value))} 
-            />
-          </div>
-        </div>
-      </div>
-      
-      {/* Staged Regular Extra Payments */}
-      <div className={styles.card}>
-        <h2 className="text-lg font-semibold mb-3">Staged Regular Extra Payments</h2>
-        <div className="mb-4">
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th className={`${styles.tableHeaderCell} w-1/4`}>Start Month</th>
-                <th className={`${styles.tableHeaderCell} w-1/4`}>End Month</th>
-                <th className={`${styles.tableHeaderCell} w-1/4`}>Amount ($)</th>
-                <th className={`${styles.tableHeaderCell} w-1/4`}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {stagedPayments.map((sp, index) => (
-                <tr key={`sp-${index}`} className={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
-                  <td className={styles.tableCell}>
-                    <input 
-                      type="number" 
-                      className={styles.input} 
-                      value={sp.startMonth} 
-                      onChange={(e) => updateStagedPayment(index, 'startMonth', e.target.value)} 
-                    />
-                  </td>
-                  <td className={styles.tableCell}>
-                    <input 
-                      type="number" 
-                      className={styles.input} 
-                      value={sp.endMonth} 
-                      onChange={(e) => updateStagedPayment(index, 'endMonth', e.target.value)} 
-                    />
-                  </td>
-                  <td className={styles.tableCell}>
-                    <input 
-                      type="number" 
-                      className={styles.input} 
-                      value={sp.amount} 
-                      onChange={(e) => updateStagedPayment(index, 'amount', e.target.value)} 
-                    />
-                  </td>
-                  <td className={styles.tableCell}>
-                    <button className="text-red-500" onClick={() => removeStagedPayment(index)}>Remove</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <button className="mt-2 text-blue-600" onClick={addStagedPayment}>+ Add Staged Payment</button>
-        </div>
+        <button 
+          className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700" 
+          onClick={calculateMortgage}
+        >
+          Calculate
+        </button>
       </div>
       
       {/* Loan Summary */}
       {loanSummary && (
-        <div className={styles.card}>
+        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
           <h2 className="text-lg font-semibold mb-3">Loan Summary</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p><strong>Initial Loan Amount:</strong> {formatCurrency(loanSummary.initialLoanAmount)}</p>
-              <p><strong>Initial Payment (EMI):</strong> {formatCurrency(loanSummary.initialPayment)}</p>
-              <p><strong>Actual Loan Term:</strong> {loanSummary.actualLoanTerm.years.toFixed(2)} years ({loanSummary.actualLoanTerm.months} months)</p>
-              <p><strong>Total Interest Paid:</strong> {formatCurrency(loanSummary.totalInterestPaid)}</p>
-              <p><strong>Total Extra Payments:</strong> {formatCurrency(loanSummary.totalExtraPayments)}</p>
+              <p><strong>Loan Amount:</strong> {formatCurrency(loanSummary.loanAmount)}</p>
+              <p><strong>Monthly Payment:</strong> {formatCurrency(loanSummary.payment)}</p>
+              <p><strong>Total Interest Paid:</strong> {formatCurrency(loanSummary.totalInterest)}</p>
             </div>
             <div>
-              <p><strong>Initial Interest Rate:</strong> {loanSummary.initialInterestRate}%</p>
-              <p><strong>Initial Loan Term:</strong> {loanSummary.initialLoanTerm.years} years ({loanSummary.initialLoanTerm.months} months)</p>
-              <p><strong>Months Saved:</strong> {loanSummary.monthsSaved}</p>
-              <p><strong>Interest Saved:</strong> {formatCurrency(loanSummary.interestSaved)}</p>
-              <p><strong>Total Amount Paid:</strong> {formatCurrency(loanSummary.totalAmountPaid)}</p>
+              <p><strong>Interest Rate:</strong> {loanSummary.interestRate}%</p>
+              <p><strong>Loan Term:</strong> {loanSummary.loanTerm} years</p>
+              <p><strong>Total Amount Paid:</strong> {formatCurrency(loanSummary.totalPaid)}</p>
             </div>
           </div>
         </div>
       )}
       
-      {/* Loan Balance Over Time Chart */}
+      {/* Loan Balance Chart */}
       {amortizationSchedule.length > 0 && (
-        <div className={styles.card}>
+        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
           <h2 className="text-lg font-semibold mb-3">Loan Balance Over Time</h2>
-          <div className={styles.chartContainer}>
+          <div className="h-64 md:h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={amortizationSchedule.map(entry => ({
@@ -617,13 +203,9 @@ const MortgageCalculator = ({ loanData, updateLoanData }) => {
                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="month" 
-                  label={{ value: 'Month', position: 'insideBottomRight', offset: -5 }} 
-                />
+                <XAxis dataKey="month" />
                 <YAxis 
-                  tickFormatter={(value) => `${Math.round(value / 1000)}k`}
-                  label={{ value: 'Remaining Principal', angle: -90, position: 'insideLeft' }} 
+                  tickFormatter={(value) => `$${Math.round(value / 1000)}k`}
                 />
                 <Tooltip 
                   formatter={(value) => [`${formatCurrency(value)}`, 'Remaining Principal']}
@@ -634,7 +216,6 @@ const MortgageCalculator = ({ loanData, updateLoanData }) => {
                   dataKey="balance" 
                   stroke="#3b82f6" 
                   activeDot={{ r: 8 }} 
-                  isAnimationActive={false} 
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -642,153 +223,41 @@ const MortgageCalculator = ({ loanData, updateLoanData }) => {
         </div>
       )}
       
-      {/* Tabs for different views */}
+      {/* Amortization Schedule */}
       {amortizationSchedule.length > 0 && (
-        <div className={styles.card}>
-          <div className={styles.tabContainer}>
-            <div 
-              className={activeTab === 'schedule' ? styles.activeTab : styles.tab}
-              onClick={() => setActiveTab('schedule')}
-            >
-              Amortization Schedule
-            </div>
-            <div 
-              className={activeTab === 'rateChanges' ? styles.activeTab : styles.tab}
-              onClick={() => setActiveTab('rateChanges')}
-            >
-              Rate Changes
-            </div>
-            <div 
-              className={activeTab === 'extraPayments' ? styles.activeTab : styles.tab}
-              onClick={() => setActiveTab('extraPayments')}
-            >
-              Extra Payments
-            </div>
-            <div 
-              className={activeTab === 'stagedPayments' ? styles.activeTab : styles.tab}
-              onClick={() => setActiveTab('stagedPayments')}
-            >
-              Staged Payments
-            </div>
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-lg font-semibold mb-3">Amortization Schedule</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Principal</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Interest</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Remaining Principal</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {amortizationSchedule.slice(0, 12).map((entry, index) => (
+                  <tr key={`schedule-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className="px-3 py-2 text-sm text-gray-500">{entry.month}</td>
+                    <td className="px-3 py-2 text-sm text-gray-500">{formatCurrency(entry.payment)}</td>
+                    <td className="px-3 py-2 text-sm text-gray-500">{formatCurrency(entry.principalPaid)}</td>
+                    <td className="px-3 py-2 text-sm text-gray-500">{formatCurrency(entry.interestPaid)}</td>
+                    <td className="px-3 py-2 text-sm text-gray-500">{formatCurrency(entry.remainingPrincipal)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {amortizationSchedule.length > 12 && (
+              <p className="mt-2 text-sm text-gray-500">Showing first 12 months of {amortizationSchedule.length} total months.</p>
+            )}
           </div>
-          
-          {/* Amortization Schedule Tab */}
-          {activeTab === 'schedule' && (
-            <div className="overflow-x-auto">
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableHeaderCell}>Month</th>
-                    <th className={styles.tableHeaderCell}>Payment</th>
-                    <th className={styles.tableHeaderCell}>Principal</th>
-                    <th className={styles.tableHeaderCell}>Interest</th>
-                    <th className={styles.tableHeaderCell}>Extra Payment</th>
-                    <th className={styles.tableHeaderCell}>Remaining Principal</th>
-                    <th className={styles.tableHeaderCell}>Rate (%)</th>
-                    <th className={styles.tableHeaderCell}>Months Left</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {amortizationSchedule.map((entry, index) => (
-                    <tr key={`schedule-${index}`} className={getRowClass(entry, index)}>
-                      <td className={styles.tableCell}>{entry.month}</td>
-                      <td className={styles.tableCell}>{formatCurrency(entry.EMI)}</td>
-                      <td className={styles.tableCell}>{formatCurrency(entry.principalPaid)}</td>
-                      <td className={styles.tableCell}>{formatCurrency(entry.interestPaid)}</td>
-                      <td className={styles.tableCell}>{formatCurrency(entry.extraPayment)}</td>
-                      <td className={styles.tableCell}>{formatCurrency(entry.remainingPrincipal)}</td>
-                      <td className={styles.tableCell}>{entry.interestRate.toFixed(2)}</td>
-                      <td className={styles.tableCell}>{entry.remainingMonths}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          
-          {/* Rate Changes Tab */}
-          {activeTab === 'rateChanges' && (
-            <div>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th className={styles.tableHeaderCell}>Month</th>
-                    <th className={styles.tableHeaderCell}>New Rate (%)</th>
-                    <th className={styles.tableHeaderCell}>New Payment</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rateChangeSummary.map((entry, index) => (
-                    <tr key={`rateChange-${index}`} className={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
-                      <td className={styles.tableCell}>{entry.month}</td>
-                      <td className={styles.tableCell}>{entry.newRate.toFixed(2)}</td>
-                      <td className={styles.tableCell}>{formatCurrency(entry.newPayment)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          
-          {/* Extra Payments Tab */}
-          {activeTab === 'extraPayments' && (
-            <div>
-              {extraPaymentSummary.length > 0 ? (
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th className={styles.tableHeaderCell}>Month</th>
-                      <th className={styles.tableHeaderCell}>Amount</th>
-                      <th className={styles.tableHeaderCell}>Remaining After</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {extraPaymentSummary.map((entry, index) => (
-                      <tr key={`extraPayment-${index}`} className={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
-                        <td className={styles.tableCell}>{entry.month}</td>
-                        <td className={styles.tableCell}>{formatCurrency(entry.amount)}</td>
-                        <td className={styles.tableCell}>{formatCurrency(entry.remainingAfter)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <p>No extra payments were made.</p>
-              )}
-            </div>
-          )}
-          
-          {/* Staged Payments Tab */}
-          {activeTab === 'stagedPayments' && (
-            <div>
-              {stagedPaymentSummary.length > 0 ? (
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th className={styles.tableHeaderCell}>Start Month</th>
-                      <th className={styles.tableHeaderCell}>End Month</th>
-                      <th className={styles.tableHeaderCell}>Amount</th>
-                      <th className={styles.tableHeaderCell}>Total Contributed</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stagedPaymentSummary.map((entry, index) => (
-                      <tr key={`stagedPayment-${index}`} className={index % 2 === 0 ? styles.tableRow : styles.tableRowAlt}>
-                        <td className={styles.tableCell}>{entry.startMonth}</td>
-                        <td className={styles.tableCell}>{entry.endMonth}</td>
-                        <td className={styles.tableCell}>{formatCurrency(entry.amount)}</td>
-                        <td className={styles.tableCell}>{formatCurrency(entry.totalContribution)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <p>No staged payments were defined.</p>
-              )}
-            </div>
-          )}
         </div>
       )}
     </div>
   );
 };
+
+export default App;
