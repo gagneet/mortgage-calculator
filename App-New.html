@@ -1,0 +1,2278 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Property Financial Calculator</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <style>
+        .tab-content {
+        display: none;
+    }
+        .tab-content.active {
+        display: block;
+    }
+        .nav-tab.active {
+        border-bottom: 2px solid #4F46E5;
+        color: #4F46E5;
+    }
+        table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+        th, td {
+        padding: 8px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+        tr:hover {
+        background-color: #f5f5f5;
+    }
+        input[type="date"], input[type="number"], select {
+        width: 100%;
+        padding: 8px;
+        margin: 4px 0;
+        display: inline-block;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+        .chart-container {
+        position: relative;
+        height: 400px;
+        width: 100%;
+    }
+    </style>
+</head>
+<body class="bg-gray-100">
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-center mb-8">Investment Property Financial Calculator</h1>
+
+    <!-- Main Navigation Tabs -->
+    <div class="flex border-b mb-6">
+        <button class="nav-tab active py-2 px-4 font-medium" data-tab="inputs">Inputs</button>
+        <button class="nav-tab py-2 px-4 font-medium" data-tab="amortization">Loan Schedule</button>
+        <button class="nav-tab py-2 px-4 font-medium" data-tab="cashflow">Monthly Cash Flow</button>
+        <button class="nav-tab py-2 px-4 font-medium" data-tab="summary">Annual Summary</button>
+        <button class="nav-tab py-2 px-4 font-medium" data-tab="dashboard">Dashboard</button>
+    </div>
+
+    <!-- Inputs Tab -->
+    <div id="inputs" class="tab-content active">
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Property and Loan Details</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-2">Loan Start Date</label>
+                    <input type="date" id="loanStartDate" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-2">Contract Price ($)</label>
+                    <input type="number" id="contractPrice" min="0" step="1000" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-2">Initial Deposit ($)</label>
+                    <input type="number" id="initialDeposit" min="0" step="1000" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-2">Loan Amount ($) (optional)</label>
+                    <input type="number" id="loanAmount" min="0" step="1000" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-2">Builder Rebate ($)</label>
+                    <input type="number" id="builderRebate" min="0" step="100" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Loan Term (years)</label>
+                    <input type="number" id="loanTerm" min="1" max="30" step="1" class="w-full" value="30">
+                </div>
+                <div>
+                    <label class="block mb-2">Loan Type</label>
+                    <select id="loanType" class="w-full">
+                        <option value="variable">Variable</option>
+                        <option value="fixed">Fixed</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2">Fixed Term (years, if applicable)</label>
+                    <input type="number" id="fixedTerm" min="1" max="10" step="1" class="w-full" value="5">
+                </div>
+                <div>
+                    <label class="block mb-2">Initial Interest Rate (%)</label>
+                    <input type="number" id="initialInterestRate" min="0" max="20" step="0.01" class="w-full" value="4.5">
+                </div>
+                <div>
+                    <label class="block mb-2">Fiscal Year Start Month</label>
+                    <select id="fiscalYearStartMonth" class="w-full">
+                        <option value="0">January</option>
+                        <option value="1">February</option>
+                        <option value="2">March</option>
+                        <option value="3">April</option>
+                        <option value="4">May</option>
+                        <option value="5">June</option>
+                        <option value="6">July</option>
+                        <option value="7">August</option>
+                        <option value="8">September</option>
+                        <option value="9">October</option>
+                        <option value="10">November</option>
+                        <option value="11">December</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2">Rental Start Date</label>
+                    <input type="date" id="rentalStartDate" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-2">Weekly Rent Amount ($)</label>
+                    <input type="number" id="weeklyRent" min="0" step="10" class="w-full" value="0">
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Settlement Costs</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block mb-2">Stamp/Conveyance Duty ($)</label>
+                    <input type="number" id="stampDuty" min="0" step="100" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Transfer Fee ($)</label>
+                    <input type="number" id="transferFee" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Mortgage Fee ($)</label>
+                    <input type="number" id="mortgageFee" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Government Fee ($)</label>
+                    <input type="number" id="governmentFee" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Bank Wealth Package ($)</label>
+                    <input type="number" id="bankWealthPackage" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Solicitor Fees ($)</label>
+                    <input type="number" id="solicitorFees" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Conveyancer Fees ($)</label>
+                    <input type="number" id="conveyancerFees" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Property Inspection ($)</label>
+                    <input type="number" id="propertyInspection" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Before Moving in Furnishings ($)</label>
+                    <input type="number" id="furnishings" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Bank Cheque Fee ($)</label>
+                    <input type="number" id="bankChequeFee" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Bank Settlement Fee ($)</label>
+                    <input type="number" id="bankSettlementFee" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Land Titles Office Fees ($)</label>
+                    <input type="number" id="landTitlesOfficeFees" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Initial Utilities ($)</label>
+                    <input type="number" id="initialUtilities" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Initial Strata Fees ($)</label>
+                    <input type="number" id="initialStrataFees" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Agent Fees ($)</label>
+                    <input type="number" id="agentFees" min="0" step="10" class="w-full" value="0">
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Recurring Expenses</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-2">Land Tax (yearly rate, $)</label>
+                    <input type="number" id="landTax" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Council Rates (yearly rate, $)</label>
+                    <input type="number" id="councilRates" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Strata Rates (yearly rate, $)</label>
+                    <input type="number" id="strataRates" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Water Rates (yearly rate, $)</label>
+                    <input type="number" id="waterRates" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Home & Contents Insurance (yearly rate, $)</label>
+                    <input type="number" id="insurance" min="0" step="10" class="w-full" value="0">
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Interest Rate Changes</h2>
+            <div id="interestRateChanges" class="space-y-2">
+                <!-- Interest rate changes will be added here -->
+            </div>
+            <button id="addInterestRateChange" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+                Add Interest Rate Change
+            </button>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Miscellaneous Repairs</h2>
+            <div id="miscRepairs" class="space-y-2">
+                <!-- Misc repairs will be added here -->
+            </div>
+            <button id="addMiscRepair" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+                Add Miscellaneous Repair
+            </button>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Extra Payments</h2>
+            <div id="extraPayments" class="space-y-2">
+                <!-- Extra payments will be added here -->
+            </div>
+            <button id="addExtraPayment" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+                Add Extra Payment
+            </button>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Depreciation Schedule</h2>
+            <p class="mb-4">Upload your depreciation schedule (XLS format) or add items manually:</p>
+            <input type="file" id="depreciationUpload" accept=".xls,.xlsx" class="mb-4">
+                <div id="depreciationItems" class="space-y-2">
+                    <!-- Depreciation items will be added here -->
+                </div>
+                <button id="addDepreciationItem" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+                    Add Depreciation Item
+                </button>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Additional Loan (Equity)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-2">Add Equity Loan?</label>
+                    <select id="hasEquityLoan" class="w-full">
+                        <option value="no">No</option>
+                        <option value="yes">Yes</option>
+                    </select>
+                </div>
+            </div>
+            <div id="equityLoanDetails" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-2">Equity Loan Start Date</label>
+                    <input type="date" id="equityLoanStartDate" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-2">Equity Loan Amount ($)</label>
+                    <input type="number" id="equityLoanAmount" min="0" step="1000" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-2">Equity Loan Term (years)</label>
+                    <input type="number" id="equityLoanTerm" min="1" max="30" step="1" class="w-full" value="30">
+                </div>
+                <div>
+                    <label class="block mb-2">Equity Loan Interest Rate (%)</label>
+                    <input type="number" id="equityLoanInterestRate" min="0" max="20" step="0.01" class="w-full" value="4.5">
+                </div>
+                <div>
+                    <label class="block mb-2">Equity Loan Type</label>
+                    <select id="equityLoanType" class="w-full">
+                        <option value="variable">Variable</option>
+                        <option value="fixed">Fixed</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2">Equity Fixed Term (years, if applicable)</label>
+                    <input type="number" id="equityFixedTerm" min="1" max="10" step="1" class="w-full" value="5">
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end">
+            <button id="calculateButton" class="bg-green-500 text-white py-2 px-6 rounded-lg font-semibold hover:bg-green-600">Calculate</button>
+        </div>
+    </div>
+
+    <!-- Amortization Schedule Tab -->
+    <div id="amortization" class="tab-content">
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Loan Details Summary</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="border p-4 rounded-lg">
+                    <h3 class="font-medium text-gray-700">Primary Loan</h3>
+                    <p>Principal: $<span id="summaryLoanPrincipal">0</span></p>
+                    <p>Term: <span id="summaryLoanTerm">0</span> years</p>
+                    <p>Initial Rate: <span id="summaryLoanRate">0</span>%</p>
+                    <p>Monthly Payment: $<span id="summaryMonthlyPayment">0</span></p>
+                </div>
+                <div class="border p-4 rounded-lg" id="equityLoanSummary">
+                    <h3 class="font-medium text-gray-700">Equity Loan</h3>
+                    <p>Principal: $<span id="summaryEquityPrincipal">0</span></p>
+                    <p>Term: <span id="summaryEquityTerm">0</span> years</p>
+                    <p>Rate: <span id="summaryEquityRate">0</span>%</p>
+                    <p>Monthly Payment: $<span id="summaryEquityMonthlyPayment">0</span></p>
+                </div>
+                <div class="border p-4 rounded-lg">
+                    <h3 class="font-medium text-gray-700">Total Financing</h3>
+                    <p>Total Principal: $<span id="summaryTotalPrincipal">0</span></p>
+                    <p>Total Interest: $<span id="summaryTotalInterest">0</span></p>
+                    <p>Total Cost: $<span id="summaryTotalCost">0</span></p>
+                    <p>Initial Combined Payment: $<span id="summaryTotalMonthlyPayment">0</span></p>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block mb-2">Select Loan:</label>
+                <select id="loanSelector" class="w-full md:w-1/3 mb-4">
+                    <option value="primary">Primary Loan</option>
+                    <option value="equity">Equity Loan</option>
+                    <option value="combined">Combined Loans</option>
+                </select>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table id="amortizationTable" class="min-w-full">
+                    <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Date</th>
+                        <th>Payment</th>
+                        <th>Principal</th>
+                        <th>Interest</th>
+                        <th>Balance</th>
+                        <th>Interest Rate</th>
+                    </tr>
+                    </thead>
+                    <tbody id="amortizationTableBody">
+                    <!-- Amortization data will be added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Cash Flow Tab -->
+    <div id="cashflow" class="tab-content">
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Monthly Cash Flow</h2>
+
+            <div class="flex items-center mb-4">
+                <label class="mr-2">Select Year:</label>
+                <select id="cashflowYearSelector" class="w-40">
+                    <!-- Years will be populated dynamically -->
+                </select>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table id="cashflowTable" class="min-w-full">
+                    <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Loan Payment</th>
+                        <th>Property Expenses</th>
+                        <th>Rental Income</th>
+                        <th>Net Cash Flow</th>
+                        <th>Details</th>
+                    </tr>
+                    </thead>
+                    <tbody id="cashflowTableBody">
+                    <!-- Cash flow data will be added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="expenseDetails" class="hidden bg-white rounded-lg shadow p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Expense Details: <span id="expenseDetailsMonth"></span></h2>
+                <button id="closeExpenseDetails" class="text-gray-500 hover:text-gray-700">&times;</button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table id="expenseDetailsTable" class="min-w-full">
+                    <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>Notes</th>
+                    </tr>
+                    </thead>
+                    <tbody id="expenseDetailsTableBody">
+                    <!-- Expense details will be added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Annual Summary Tab -->
+    <div id="summary" class="tab-content">
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Annual Financial Summary</h2>
+
+            <div class="overflow-x-auto">
+                <table id="annualSummaryTable" class="min-w-full">
+                    <thead>
+                    <tr>
+                        <th>Fiscal Year</th>
+                        <th>Total Expenses</th>
+                        <th>Total Income</th>
+                        <th>Interest Paid</th>
+                        <th>Principal Paid</th>
+                        <th>Depreciation</th>
+                        <th>Tax Benefit (45%)</th>
+                        <th>Net Position</th>
+                    </tr>
+                    </thead>
+                    <tbody id="annualSummaryTableBody">
+                    <!-- Annual summary data will be added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Tax Position Details</h2>
+
+            <div class="flex items-center mb-4">
+                <label class="mr-2">Select Fiscal Year:</label>
+                <select id="fiscalYearSelector" class="w-40">
+                    <!-- Fiscal years will be populated dynamically -->
+                </select>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table id="taxDetailsTable" class="min-w-full">
+                    <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>Notes</th>
+                    </tr>
+                    </thead>
+                    <tbody id="taxDetailsTableBody">
+                    <!-- Tax details will be added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Tab -->
+    <div id="dashboard" class="tab-content">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">Monthly Cash Flow</h2>
+                <div class="chart-container">
+                    <canvas id="cashflowChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">Loan Balance Over Time</h2>
+                <div class="chart-container">
+                    <canvas id="loanBalanceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">Expense Breakdown</h2>
+                <div class="chart-container">
+                    <canvas id="expenseBreakdownChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">Annual Summary</h2>
+                <div class="chart-container">
+                    <canvas id="annualSummaryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Global data store
+    const propertyData = {
+    // Loan details
+    loanStartDate: null,
+    contractPrice: 0,
+    initialDeposit: 0,
+    loanAmount: 0,
+    builderRebate: 0,
+    loanTerm: 30,
+    loanType: 'variable',
+    fixedTerm: 5,
+    initialInterestRate: 4.5,
+    fiscalYearStartMonth: 6, // July
+
+    // Rental details
+    rentalStartDate: null,
+    weeklyRent: 0,
+
+    // Settlement costs
+    settlementCosts: {},
+
+    // Recurring expenses
+    recurringExpenses: {},
+
+    // Interest rate changes
+    interestRateChanges: [],
+
+    // Repairs
+    miscRepairs: [],
+
+    // Extra payments
+    extraPayments: [],
+
+    // Depreciation items
+    depreciationItems: [],
+
+    // Equity loan
+    hasEquityLoan: false,
+    equityLoan: {
+    startDate: null,
+    amount: 0,
+    term: 30,
+    interestRate: 4.5,
+    type: 'variable',
+    fixedTerm: 5
+},
+
+    // Calculation results
+    results: {
+    primaryLoan: {
+    schedule: [],
+    totalInterest: 0,
+    totalPrincipal: 0,
+    monthlyPayment: 0
+},
+    equityLoan: {
+    schedule: [],
+    totalInterest: 0,
+    totalPrincipal: 0,
+    monthlyPayment: 0
+},
+    cashFlow: {},
+    annualSummary: {}
+}
+};
+
+    // DOM elements
+    const elements = {
+    tabs: document.querySelectorAll('.nav-tab'),
+    tabContents: document.querySelectorAll('.tab-content'),
+    inputFields: {
+    loanStartDate: document.getElementById('loanStartDate'),
+    contractPrice: document.getElementById('contractPrice'),
+    initialDeposit: document.getElementById('initialDeposit'),
+    loanAmount: document.getElementById('loanAmount'),
+    builderRebate: document.getElementById('builderRebate'),
+    loanTerm: document.getElementById('loanTerm'),
+    loanType: document.getElementById('loanType'),
+    fixedTerm: document.getElementById('fixedTerm'),
+    initialInterestRate: document.getElementById('initialInterestRate'),
+    fiscalYearStartMonth: document.getElementById('fiscalYearStartMonth'),
+    rentalStartDate: document.getElementById('rentalStartDate'),
+    weeklyRent: document.getElementById('weeklyRent'),
+
+    // Settlement costs
+    stampDuty: document.getElementById('stampDuty'),
+    transferFee: document.getElementById('transferFee'),
+    mortgageFee: document.getElementById('mortgageFee'),
+    governmentFee: document.getElementById('governmentFee'),
+    bankWealthPackage: document.getElementById('bankWealthPackage'),
+    solicitorFees: document.getElementById('solicitorFees'),
+    conveyancerFees: document.getElementById('conveyancerFees'),
+    propertyInspection: document.getElementById('propertyInspection'),
+    furnishings: document.getElementById('furnishings'),
+    bankChequeFee: document.getElementById('bankChequeFee'),
+    bankSettlementFee: document.getElementById('bankSettlementFee'),
+    landTitlesOfficeFees: document.getElementById('landTitlesOfficeFees'),
+    initialUtilities: document.getElementById('initialUtilities'),
+    initialStrataFees: document.getElementById('initialStrataFees'),
+    agentFees: document.getElementById('agentFees'),
+
+    // Recurring expenses
+    landTax: document.getElementById('landTax'),
+    councilRates: document.getElementById('councilRates'),
+    strataRates: document.getElementById('strataRates'),
+    waterRates: document.getElementById('waterRates'),
+    insurance: document.getElementById('insurance'),
+
+    // Equity loan
+    hasEquityLoan: document.getElementById('hasEquityLoan'),
+    equityLoanStartDate: document.getElementById('equityLoanStartDate'),
+    equityLoanAmount: document.getElementById('equityLoanAmount'),
+    equityLoanTerm: document.getElementById('equityLoanTerm'),
+    equityLoanInterestRate: document.getElementById('equityLoanInterestRate'),
+    equityLoanType: document.getElementById('equityLoanType'),
+    equityFixedTerm: document.getElementById('equityFixedTerm')
+},
+    containers: {
+    interestRateChanges: document.getElementById('interestRateChanges'),
+    miscRepairs: document.getElementById('miscRepairs'),
+    extraPayments: document.getElementById('extraPayments'),
+    depreciationItems: document.getElementById('depreciationItems'),
+    equityLoanDetails: document.getElementById('equityLoanDetails')
+},
+    buttons: {
+    calculate: document.getElementById('calculateButton'),
+    addInterestRateChange: document.getElementById('addInterestRateChange'),
+    addMiscRepair: document.getElementById('addMiscRepair'),
+    addExtraPayment: document.getElementById('addExtraPayment'),
+    addDepreciationItem: document.getElementById('addDepreciationItem'),
+    closeExpenseDetails: document.getElementById('closeExpenseDetails')
+},
+    summaryElements: {
+    loanPrincipal: document.getElementById('summaryLoanPrincipal'),
+    loanTerm: document.getElementById('summaryLoanTerm'),
+    loanRate: document.getElementById('summaryLoanRate'),
+    monthlyPayment: document.getElementById('summaryMonthlyPayment'),
+    equityPrincipal: document.getElementById('summaryEquityPrincipal'),
+    equityTerm: document.getElementById('summaryEquityTerm'),
+    equityRate: document.getElementById('summaryEquityRate'),
+    equityMonthlyPayment: document.getElementById('summaryEquityMonthlyPayment'),
+    totalPrincipal: document.getElementById('summaryTotalPrincipal'),
+    totalInterest: document.getElementById('summaryTotalInterest'),
+    totalCost: document.getElementById('summaryTotalCost'),
+    totalMonthlyPayment: document.getElementById('summaryTotalMonthlyPayment')
+},
+    selectors: {
+    loanSelector: document.getElementById('loanSelector'),
+    cashflowYearSelector: document.getElementById('cashflowYearSelector'),
+    fiscalYearSelector: document.getElementById('fiscalYearSelector')
+},
+    tables: {
+    amortizationTable: document.getElementById('amortizationTableBody'),
+    cashflowTable: document.getElementById('cashflowTableBody'),
+    expenseDetailsTable: document.getElementById('expenseDetailsTableBody'),
+    annualSummaryTable: document.getElementById('annualSummaryTableBody'),
+    taxDetailsTable: document.getElementById('taxDetailsTableBody')
+},
+    chartCanvases: {
+    cashflowChart: document.getElementById('cashflowChart'),
+    loanBalanceChart: document.getElementById('loanBalanceChart'),
+    expenseBreakdownChart: document.getElementById('expenseBreakdownChart'),
+    annualSummaryChart: document.getElementById('annualSummaryChart')
+},
+    depreciationUpload: document.getElementById('depreciationUpload'),
+    expenseDetails: document.getElementById('expenseDetails'),
+    expenseDetailsMonth: document.getElementById('expenseDetailsMonth')
+};
+
+    // Charts object to store chart instances
+    const charts = {
+    cashflow: null,
+    loanBalance: null,
+    expenseBreakdown: null,
+    annualSummary: null
+};
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+    // Tab navigation
+    elements.tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabId = tab.getAttribute('data-tab');
+
+            // Remove active class from all tabs and contents
+            elements.tabs.forEach(t => t.classList.remove('active'));
+            elements.tabContents.forEach(c => c.classList.remove('active'));
+
+            // Add active class to selected tab and content
+            tab.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+
+            // If dashboard tab is activated, initialize or update charts
+            if (tabId === 'dashboard') {
+                updateCharts();
+            }
+        });
+    });
+
+    // Calculate button
+    elements.buttons.calculate.addEventListener('click', calculateAll);
+
+    // Add dynamic form elements
+    elements.buttons.addInterestRateChange.addEventListener('click', addInterestRateChange);
+    elements.buttons.addMiscRepair.addEventListener('click', addMiscRepair);
+    elements.buttons.addExtraPayment.addEventListener('click', addExtraPayment);
+    elements.buttons.addDepreciationItem.addEventListener('click', addDepreciationItem);
+
+    // Show/hide equity loan details
+    elements.inputFields.hasEquityLoan.addEventListener('change', () => {
+    if (elements.inputFields.hasEquityLoan.value === 'yes') {
+    elements.containers.equityLoanDetails.classList.remove('hidden');
+} else {
+    elements.containers.equityLoanDetails.classList.add('hidden');
+}
+});
+
+    // Loan selector change
+    elements.selectors.loanSelector.addEventListener('change', updateAmortizationTable);
+
+    // Year selectors change
+    elements.selectors.cashflowYearSelector.addEventListener('change', updateCashflowTable);
+    elements.selectors.fiscalYearSelector.addEventListener('change', updateTaxDetailsTable);
+
+    // Close expense details
+    elements.buttons.closeExpenseDetails.addEventListener('click', () => {
+    elements.expenseDetails.classList.add('hidden');
+});
+
+    // Handle depreciation file upload
+    elements.depreciationUpload.addEventListener('change', handleDepreciationUpload);
+
+    // Auto calculate loan amount if not specified
+    elements.inputFields.contractPrice.addEventListener('change', updateLoanAmount);
+    elements.inputFields.initialDeposit.addEventListener('change', updateLoanAmount);
+    elements.inputFields.builderRebate.addEventListener('change', updateLoanAmount);
+
+    // Set default dates
+    const today = new Date();
+    elements.inputFields.loanStartDate.value = today.toISOString().split('T')[0];
+    elements.inputFields.rentalStartDate.value = today.toISOString().split('T')[0];
+    elements.inputFields.fiscalYearStartMonth.value = '6'; // July by default
+});
+
+    // Helper Functions
+
+    function updateLoanAmount() {
+    const contractPrice = parseFloat(elements.inputFields.contractPrice.value) || 0;
+    const initialDeposit = parseFloat(elements.inputFields.initialDeposit.value) || 0;
+    const builderRebate = parseFloat(elements.inputFields.builderRebate.value) || 0;
+
+    if (contractPrice > 0) {
+    const calculatedLoanAmount = contractPrice - initialDeposit - builderRebate;
+    if (calculatedLoanAmount > 0) {
+    elements.inputFields.loanAmount.value = calculatedLoanAmount;
+}
+}
+}
+
+    function addInterestRateChange() {
+    const container = document.createElement('div');
+    container.className = 'interest-rate-change flex items-center space-x-4';
+    container.innerHTML = `
+                <div class="w-1/3">
+                    <label>Date</label>
+                    <input type="date" class="interest-rate-date w-full">
+                </div>
+                <div class="w-1/3">
+                    <label>New Rate (%)</label>
+                    <input type="number" min="0" max="20" step="0.01" class="interest-rate-value w-full">
+                </div>
+                <div class="mt-6">
+                    <button class="remove-item bg-red-500 text-white py-1 px-2 rounded hover:bg-red-600">Remove</button>
+                </div>
+            `;
+
+    container.querySelector('.remove-item').addEventListener('click', () => {
+    container.remove();
+});
+
+    elements.containers.interestRateChanges.appendChild(container);
+}
+
+    function addMiscRepair() {
+    const container = document.createElement('div');
+    container.className = 'misc-repair flex items-center space-x-4';
+    container.innerHTML = `
+                <div class="w-1/3">
+                    <label>Date</label>
+                    <input type="date" class="repair-date w-full">
+                </div>
+                <div class="w-1/3">
+                    <label>Amount ($)</label>
+                    <input type="number" min="0" step="10" class="repair-amount w-full">
+                </div>
+                <div class="w-1/3">
+                    <label>Description</label>
+                    <input type="text" class="repair-description w-full">
+                </div>
+                <div class="mt-6">
+                    <button class="remove-item bg-red-500 text-white py-1 px-2 rounded hover:bg-red-600">Remove</button>
+                </div>
+            `;
+
+    container.querySelector('.remove-item').addEventListener('click', () => {
+    container.remove();
+});
+
+    elements.containers.miscRepairs.appendChild(container);
+}
+
+    function addExtraPayment() {
+    const container = document.createElement('div');
+    container.className = 'extra-payment flex items-center space-x-4';
+    container.innerHTML = `
+                <div class="w-1/4">
+                    <label>Date</label>
+                    <input type="date" class="payment-date w-full">
+                </div>
+                <div class="w-1/4">
+                    <label>Amount ($)</label>
+                    <input type="number" min="0" step="100" class="payment-amount w-full">
+                </div>
+                <div class="w-1/4">
+                    <label>Apply to</label>
+                    <select class="payment-target w-full">
+                        <option value="primary">Primary Loan</option>
+                        <option value="equity">Equity Loan</option>
+                    </select>
+                </div>
+                <div class="w-1/4">
+                    <label>Description</label>
+                    <input type="text" class="payment-description w-full">
+                </div>
+                <div class="mt-6">
+                    <button class="remove-item bg-red-500 text-white py-1 px-2 rounded hover:bg-red-600">Remove</button>
+                </div>
+            `;
+
+    container.querySelector('.remove-item').addEventListener('click', () => {
+    container.remove();
+});
+
+    elements.containers.extraPayments.appendChild(container);
+}
+
+    function addDepreciationItem() {
+    const container = document.createElement('div');
+    container.className = 'depreciation-item flex items-center space-x-4';
+    container.innerHTML = `
+                <div class="w-1/4">
+                    <label>Description</label>
+                    <input type="text" class="item-description w-full">
+                </div>
+                <div class="w-1/4">
+                    <label>Cost Basis ($)</label>
+                    <input type="number" min="0" step="100" class="item-cost w-full">
+                </div>
+                <div class="w-1/4">
+                    <label>Rate (% per year)</label>
+                    <input type="number" min="0" max="100" step="0.1" class="item-rate w-full">
+                </div>
+                <div class="w-1/4">
+                    <label>Start Date</label>
+                    <input type="date" class="item-start-date w-full">
+                </div>
+                <div class="mt-6">
+                    <button class="remove-item bg-red-500 text-white py-1 px-2 rounded hover:bg-red-600">Remove</button>
+                </div>
+            `;
+
+    container.querySelector('.remove-item').addEventListener('click', () => {
+    container.remove();
+});
+
+    elements.containers.depreciationItems.appendChild(container);
+}
+
+    async function handleDepreciationUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+    const data = await readExcelFile(file);
+    if (data && data.length > 0) {
+    // Clear existing items
+    elements.containers.depreciationItems.innerHTML = '';
+
+    // Add each item from the file
+    data.forEach(item => {
+    if (item.Description && item.Cost) {
+    const container = document.createElement('div');
+    container.className = 'depreciation-item flex items-center space-x-4';
+    container.innerHTML = `
+                                <div class="w-1/4">
+                                    <label>Description</label>
+                                    <input type="text" class="item-description w-full" value="${item.Description}">
+                                </div>
+                                <div class="w-1/4">
+                                    <label>Cost Basis ($)</label>
+                                    <input type="number" min="0" step="100" class="item-cost w-full" value="${item.Cost}">
+                                </div>
+                                <div class="w-1/4">
+                                    <label>Rate (% per year)</label>
+                                    <input type="number" min="0" max="100" step="0.1" class="item-rate w-full" value="${item.Rate || 2.5}">
+                                </div>
+                                <div class="w-1/4">
+                                    <label>Start Date</label>
+                                    <input type="date" class="item-start-date w-full" value="${item.StartDate || new Date().toISOString().split('T')[0]}">
+                                </div>
+                                <div class="mt-6">
+                                    <button class="remove-item bg-red-500 text-white py-1 px-2 rounded hover:bg-red-600">Remove</button>
+                                </div>
+                            `;
+
+    container.querySelector('.remove-item').addEventListener('click', () => {
+    container.remove();
+});
+
+    elements.containers.depreciationItems.appendChild(container);
+}
+});
+
+    alert(`Imported ${data.length} depreciation items`);
+}
+} catch (error) {
+    console.error("Error reading depreciation file:", error);
+    alert("Error reading depreciation file. Please check the format.");
+}
+}
+
+    async function readExcelFile(file) {
+    return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+    try {
+    const data = e.target.result;
+    const workbook = XLSX.read(data, { type: 'array' });
+
+    // Assume first sheet
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+
+    // Convert to JSON
+    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+    resolve(jsonData);
+} catch (error) {
+    reject(error);
+}
+};
+
+    reader.onerror = function(error) {
+    reject(error);
+};
+
+    reader.readAsArrayBuffer(file);
+});
+}
+
+    // Core calculation functions
+
+    function collectFormData() {
+    // Collect loan details
+    propertyData.loanStartDate = new Date(elements.inputFields.loanStartDate.value);
+    propertyData.contractPrice = parseFloat(elements.inputFields.contractPrice.value) || 0;
+    propertyData.initialDeposit = parseFloat(elements.inputFields.initialDeposit.value) || 0;
+    propertyData.loanAmount = parseFloat(elements.inputFields.loanAmount.value) || 0;
+    propertyData.builderRebate = parseFloat(elements.inputFields.builderRebate.value) || 0;
+    propertyData.loanTerm = parseInt(elements.inputFields.loanTerm.value) || 30;
+    propertyData.loanType = elements.inputFields.loanType.value;
+    propertyData.fixedTerm = parseInt(elements.inputFields.fixedTerm.value) || 5;
+    propertyData.initialInterestRate = parseFloat(elements.inputFields.initialInterestRate.value) || 4.5;
+    propertyData.fiscalYearStartMonth = parseInt(elements.inputFields.fiscalYearStartMonth.value) || 6;
+
+    // Rental details
+    propertyData.rentalStartDate = new Date(elements.inputFields.rentalStartDate.value);
+    propertyData.weeklyRent = parseFloat(elements.inputFields.weeklyRent.value) || 0;
+
+    // Settlement costs
+    propertyData.settlementCosts = {
+    stampDuty: parseFloat(elements.inputFields.stampDuty.value) || 0,
+    transferFee: parseFloat(elements.inputFields.transferFee.value) || 0,
+    mortgageFee: parseFloat(elements.inputFields.mortgageFee.value) || 0,
+    governmentFee: parseFloat(elements.inputFields.governmentFee.value) || 0,
+    bankWealthPackage: parseFloat(elements.inputFields.bankWealthPackage.value) || 0,
+    solicitorFees: parseFloat(elements.inputFields.solicitorFees.value) || 0,
+    conveyancerFees: parseFloat(elements.inputFields.conveyancerFees.value) || 0,
+    propertyInspection: parseFloat(elements.inputFields.propertyInspection.value) || 0,
+    furnishings: parseFloat(elements.inputFields.furnishings.value) || 0,
+    bankChequeFee: parseFloat(elements.inputFields.bankChequeFee.value) || 0,
+    bankSettlementFee: parseFloat(elements.inputFields.bankSettlementFee.value) || 0,
+    landTitlesOfficeFees: parseFloat(elements.inputFields.landTitlesOfficeFees.value) || 0,
+    initialUtilities: parseFloat(elements.inputFields.initialUtilities.value) || 0,
+    initialStrataFees: parseFloat(elements.inputFields.initialStrataFees.value) || 0,
+    agentFees: parseFloat(elements.inputFields.agentFees.value) || 0
+};
+
+    // Recurring expenses
+    propertyData.recurringExpenses = {
+    landTax: parseFloat(elements.inputFields.landTax.value) || 0,
+    councilRates: parseFloat(elements.inputFields.councilRates.value) || 0,
+    strataRates: parseFloat(elements.inputFields.strataRates.value) || 0,
+    waterRates: parseFloat(elements.inputFields.waterRates.value) || 0,
+    insurance: parseFloat(elements.inputFields.insurance.value) || 0
+};
+
+    // Interest rate changes
+    propertyData.interestRateChanges = [];
+    document.querySelectorAll('.interest-rate-change').forEach(item => {
+    const date = item.querySelector('.interest-rate-date').value;
+    const rate = parseFloat(item.querySelector('.interest-rate-value').value);
+
+    if (date && !isNaN(rate)) {
+    propertyData.interestRateChanges.push({
+    date: new Date(date),
+    rate: rate
+});
+}
+});
+
+    // Sort interest rate changes by date
+    propertyData.interestRateChanges.sort((a, b) => a.date - b.date);
+
+    // Miscellaneous repairs
+    propertyData.miscRepairs = [];
+    document.querySelectorAll('.misc-repair').forEach(item => {
+    const date = item.querySelector('.repair-date').value;
+    const amount = parseFloat(item.querySelector('.repair-amount').value);
+    const description = item.querySelector('.repair-description').value;
+
+    if (date && !isNaN(amount)) {
+    propertyData.miscRepairs.push({
+    date: new Date(date),
+    amount: amount,
+    description: description || 'Repair'
+});
+}
+});
+
+    // Extra payments
+    propertyData.extraPayments = [];
+    document.querySelectorAll('.extra-payment').forEach(item => {
+    const date = item.querySelector('.payment-date').value;
+    const amount = parseFloat(item.querySelector('.payment-amount').value);
+    const target = item.querySelector('.payment-target').value;
+    const description = item.querySelector('.payment-description').value;
+
+    if (date && !isNaN(amount)) {
+    propertyData.extraPayments.push({
+    date: new Date(date),
+    amount: amount,
+    target: target,
+    description: description || 'Extra Payment'
+});
+}
+});
+
+    // Depreciation items
+    propertyData.depreciationItems = [];
+    document.querySelectorAll('.depreciation-item').forEach(item => {
+    const description = item.querySelector('.item-description').value;
+    const cost = parseFloat(item.querySelector('.item-cost').value);
+    const rate = parseFloat(item.querySelector('.item-rate').value);
+    const startDate = item.querySelector('.item-start-date').value;
+
+    if (description && !isNaN(cost) && !isNaN(rate) && startDate) {
+    propertyData.depreciationItems.push({
+    description: description,
+    cost: cost,
+    rate: rate,
+    startDate: new Date(startDate)
+});
+}
+});
+
+    // Equity loan
+    propertyData.hasEquityLoan = elements.inputFields.hasEquityLoan.value === 'yes';
+    if (propertyData.hasEquityLoan) {
+    propertyData.equityLoan = {
+    startDate: new Date(elements.inputFields.equityLoanStartDate.value),
+    amount: parseFloat(elements.inputFields.equityLoanAmount.value) || 0,
+    term: parseInt(elements.inputFields.equityLoanTerm.value) || 30,
+    interestRate: parseFloat(elements.inputFields.equityLoanInterestRate.value) || 4.5,
+    type: elements.inputFields.equityLoanType.value,
+    fixedTerm: parseInt(elements.inputFields.equityFixedTerm.value) || 5
+};
+}
+}
+
+    function calculateAll() {
+    // Collect data from the form
+    collectFormData();
+
+    // Calculate loan amortization schedules
+    calculateLoanSchedules();
+
+    // Calculate monthly cash flow
+    calculateMonthlyCashFlow();
+
+    // Calculate annual summary
+    calculateAnnualSummary();
+
+    // Update UI
+    updateUI();
+
+    // Switch to amortization tab to show results
+    const amortizationTab = document.querySelector('[data-tab="amortization"]');
+    amortizationTab.click();
+}
+
+    function calculateLoanSchedules() {
+    // Calculate primary loan
+    propertyData.results.primaryLoan = calculateAmortizationSchedule(
+        propertyData.loanAmount,
+        propertyData.loanTerm,
+        propertyData.initialInterestRate,
+        propertyData.loanStartDate,
+        propertyData.interestRateChanges,
+        propertyData.extraPayments.filter(p => p.target === 'primary')
+    );
+
+    // Calculate equity loan if applicable
+    if (propertyData.hasEquityLoan && propertyData.equityLoan.amount > 0) {
+    propertyData.results.equityLoan = calculateAmortizationSchedule(
+    propertyData.equityLoan.amount,
+    propertyData.equityLoan.term,
+    propertyData.equityLoan.interestRate,
+    propertyData.equityLoan.startDate,
+    propertyData.interestRateChanges, // Apply same interest rate changes
+    propertyData.extraPayments.filter(p => p.target === 'equity')
+    );
+} else {
+    propertyData.results.equityLoan = {
+    schedule: [],
+    totalInterest: 0,
+    totalPrincipal: 0,
+    monthlyPayment: 0
+};
+}
+}
+
+    function calculateAmortizationSchedule(principal, termYears, interestRate, startDate, rateChanges, extraPayments) {
+    const monthlyRate = interestRate / 100 / 12;
+    const numberOfPayments = termYears * 12;
+    const monthlyPayment = calculateMonthlyPayment(principal, monthlyRate, numberOfPayments);
+
+    let balance = principal;
+    let totalInterest = 0;
+    let currentRate = interestRate;
+    let currentMonthlyRate = monthlyRate;
+    let currentMonthlyPayment = monthlyPayment;
+
+    const schedule = [];
+    let nextExtraPaymentIndex = 0;
+
+    for (let month = 0; month < numberOfPayments && balance > 0; month++) {
+    const paymentDate = new Date(startDate);
+    paymentDate.setMonth(paymentDate.getMonth() + month);
+
+    // Check for interest rate changes
+    for (const rateChange of rateChanges) {
+    if (rateChange.date <= paymentDate && (month === 0 || rateChange.date > new Date(startDate.getTime()))) {
+    currentRate = rateChange.rate;
+    currentMonthlyRate = currentRate / 100 / 12;
+    currentMonthlyPayment = calculateMonthlyPayment(balance, currentMonthlyRate, numberOfPayments - month);
+    break;
+}
+}
+
+    // Calculate interest and principal for this month
+    const interestPayment = balance * currentMonthlyRate;
+    let principalPayment = currentMonthlyPayment - interestPayment;
+
+    // Handle potential final payment adjustments
+    if (principalPayment > balance) {
+    principalPayment = balance;
+    currentMonthlyPayment = principalPayment + interestPayment;
+}
+
+    // Apply extra payments if any
+    let extraPayment = 0;
+    let extraPaymentDescription = '';
+
+    while (nextExtraPaymentIndex < extraPayments.length) {
+    const payment = extraPayments[nextExtraPaymentIndex];
+    if (payment.date <= paymentDate) {
+    extraPayment += payment.amount;
+    extraPaymentDescription = payment.description;
+    nextExtraPaymentIndex++;
+} else {
+    break;
+}
+}
+
+    if (extraPayment > 0) {
+    if (extraPayment > balance - principalPayment) {
+    extraPayment = balance - principalPayment;
+}
+    principalPayment += extraPayment;
+    currentMonthlyPayment = principalPayment + interestPayment;
+}
+
+    // Update balance
+    balance -= principalPayment;
+    totalInterest += interestPayment;
+
+    // Add to schedule
+    schedule.push({
+    month: month + 1,
+    date: paymentDate,
+    payment: currentMonthlyPayment,
+    principal: principalPayment,
+    interest: interestPayment,
+    balance: balance,
+    rate: currentRate,
+    extraPayment: extraPayment,
+    extraPaymentDescription: extraPaymentDescription
+});
+
+    // Break if loan is fully paid
+    if (balance <= 0) {
+    break;
+}
+}
+
+    return {
+    schedule: schedule,
+    totalInterest: totalInterest,
+    totalPrincipal: principal,
+    monthlyPayment: monthlyPayment
+};
+}
+
+    function calculateMonthlyPayment(principal, monthlyRate, numberOfPayments) {
+    if (monthlyRate === 0) {
+    return principal / numberOfPayments;
+}
+
+    return principal * monthlyRate * Math.pow(1 + monthlyRate, numberOfPayments) /
+    (Math.pow(1 + monthlyRate, numberOfPayments) - 1);
+}
+
+    function calculateMonthlyCashFlow() {
+    propertyData.results.cashFlow = {};
+
+    // Determine the date range for calculations
+    const startDate = new Date(propertyData.loanStartDate);
+    let endDate = startDate;
+
+    // Find the end date based on the loan schedules
+    if (propertyData.results.primaryLoan.schedule.length > 0) {
+    const primaryEndDate = propertyData.results.primaryLoan.schedule[propertyData.results.primaryLoan.schedule.length - 1].date;
+    endDate = primaryEndDate > endDate ? primaryEndDate : endDate;
+}
+
+    if (propertyData.results.equityLoan.schedule.length > 0) {
+    const equityEndDate = propertyData.results.equityLoan.schedule[propertyData.results.equityLoan.schedule.length - 1].date;
+    endDate = equityEndDate > endDate ? equityEndDate : endDate;
+}
+
+    // Calculate cash flow for each month
+    let currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    const key = `${year}-${month}`;
+
+    if (!propertyData.results.cashFlow[key]) {
+    propertyData.results.cashFlow[key] = {
+    date: new Date(currentDate),
+    year: year,
+    month: month,
+    loanPayment: 0,
+    expenses: [],
+    rental: 0,
+    totalExpenses: 0,
+    totalIncome: 0,
+    netCashFlow: 0
+};
+}
+
+    // Add loan payments
+    let primaryPayment = 0;
+    let equityPayment = 0;
+
+    // Find primary loan payment for this month
+    const primaryLoanPayment = propertyData.results.primaryLoan.schedule.find(p =>
+    p.date.getFullYear() === year && p.date.getMonth() === month
+    );
+
+    if (primaryLoanPayment) {
+    primaryPayment = primaryLoanPayment.payment;
+    propertyData.results.cashFlow[key].expenses.push({
+    category: 'Primary Loan Payment',
+    amount: primaryPayment,
+    notes: `Interest: ${primaryLoanPayment.interest.toFixed(2)}, Principal: ${primaryLoanPayment.principal.toFixed(2)}`
+});
+}
+
+    // Find equity loan payment for this month
+    if (propertyData.hasEquityLoan) {
+    const equityLoanPayment = propertyData.results.equityLoan.schedule.find(p =>
+    p.date.getFullYear() === year && p.date.getMonth() === month
+    );
+
+    if (equityLoanPayment) {
+    equityPayment = equityLoanPayment.payment;
+    propertyData.results.cashFlow[key].expenses.push({
+    category: 'Equity Loan Payment',
+    amount: equityPayment,
+    notes: `Interest: ${equityLoanPayment.interest.toFixed(2)}, Principal: ${equityLoanPayment.principal.toFixed(2)}`
+});
+}
+}
+
+    propertyData.results.cashFlow[key].loanPayment = primaryPayment + equityPayment;
+
+    // Add recurring expenses (quarterly)
+    const isQuarterMonth = month % 3 === 0; // Jan, Apr, Jul, Oct
+
+    if (isQuarterMonth) {
+    // Land tax (quarterly)
+    const quarterlyLandTax = propertyData.recurringExpenses.landTax / 4;
+    propertyData.results.cashFlow[key].expenses.push({
+    category: 'Land Tax (Quarterly)',
+    amount: quarterlyLandTax,
+    notes: `Quarterly payment (${quarterlyLandTax.toFixed(2)} × 4 = ${propertyData.recurringExpenses.landTax.toFixed(2)} yearly)`
+});
+
+    // Council rates (quarterly)
+    const quarterlyCouncilRates = propertyData.recurringExpenses.councilRates / 4;
+    propertyData.results.cashFlow[key].expenses.push({
+    category: 'Council Rates (Quarterly)',
+    amount: quarterlyCouncilRates,
+    notes: `Quarterly payment (${quarterlyCouncilRates.toFixed(2)} × 4 = ${propertyData.recurringExpenses.councilRates.toFixed(2)} yearly)`
+});
+
+    // Strata rates (quarterly)
+    const quarterlyStrataRates = propertyData.recurringExpenses.strataRates / 4;
+    propertyData.results.cashFlow[key].expenses.push({
+    category: 'Strata Rates (Quarterly)',
+    amount: quarterlyStrataRates,
+    notes: `Quarterly payment (${quarterlyStrataRates.toFixed(2)} × 4 = ${propertyData.recurringExpenses.strataRates.toFixed(2)} yearly)`
+});
+
+    // Water rates (quarterly)
+    const quarterlyWaterRates = propertyData.recurringExpenses.waterRates / 4;
+    propertyData.results.cashFlow[key].expenses.push({
+    category: 'Water Rates (Quarterly)',
+    amount: quarterlyWaterRates,
+    notes: `Quarterly payment (${quarterlyWaterRates.toFixed(2)} × 4 = ${propertyData.recurringExpenses.waterRates.toFixed(2)} yearly)`
+});
+}
+
+    // Home & Contents Insurance (monthly)
+    const monthlyInsurance = propertyData.recurringExpenses.insurance / 12;
+    propertyData.results.cashFlow[key].expenses.push({
+    category: 'Home & Contents Insurance',
+    amount: monthlyInsurance,
+    notes: `Monthly payment (${monthlyInsurance.toFixed(2)} × 12 = ${propertyData.recurringExpenses.insurance.toFixed(2)} yearly)`
+});
+
+    // Add any misc repairs for this month
+    propertyData.miscRepairs.forEach(repair => {
+    if (repair.date.getFullYear() === year && repair.date.getMonth() === month) {
+    propertyData.results.cashFlow[key].expenses.push({
+    category: 'Miscellaneous Repair',
+    amount: repair.amount,
+    notes: repair.description
+});
+}
+});
+
+    // Add settlement costs for the first month only
+    if (currentDate.getFullYear() === startDate.getFullYear() && currentDate.getMonth() === startDate.getMonth()) {
+    Object.entries(propertyData.settlementCosts).forEach(([key, value]) => {
+    if (value > 0) {
+    const formattedKey = key
+    .replace(/([A-Z])/g, ' $1') // Add spaces before capital letters
+    .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
+
+    propertyData.results.cashFlow[`${year}-${month}`].expenses.push({
+    category: formattedKey,
+    amount: value,
+    notes: 'One-time settlement cost'
+});
+}
+});
+}
+
+    // Calculate rental income
+    if (propertyData.weeklyRent > 0 && currentDate >= propertyData.rentalStartDate) {
+    // Calculate fortnightly rental payments
+    const rentalStartDate = new Date(propertyData.rentalStartDate);
+    const daysSinceRentalStart = Math.floor((currentDate - rentalStartDate) / (1000 * 60 * 60 * 24));
+
+    // Determine how many fortnights fall in this month
+    const startOfMonth = new Date(year, month, 1);
+    const endOfMonth = new Date(year, month + 1, 0);
+
+    let fortnightCount = 0;
+    let currentFortnight = new Date(rentalStartDate);
+
+    // Adjust to find the first fortnight payment in or before this month
+    while (currentFortnight < startOfMonth) {
+    currentFortnight.setDate(currentFortnight.getDate() + 14); // Add 14 days
+}
+
+    // If we went past the start of month, go back one fortnight
+    if (currentFortnight > startOfMonth) {
+    currentFortnight.setDate(currentFortnight.getDate() - 14);
+}
+
+    // Count fortnights in this month
+    while (currentFortnight <= endOfMonth) {
+    fortnightCount++;
+    currentFortnight.setDate(currentFortnight.getDate() + 14);
+}
+
+    const fortnightlyRent = propertyData.weeklyRent * 2;
+    const monthlyRental = fortnightlyRent * fortnightCount;
+
+    propertyData.results.cashFlow[key].rental = monthlyRental;
+}
+
+    // Calculate totals
+    propertyData.results.cashFlow[key].totalExpenses = propertyData.results.cashFlow[key].loanPayment +
+    propertyData.results.cashFlow[key].expenses.reduce((sum, expense) => sum + expense.amount, 0);
+
+    propertyData.results.cashFlow[key].totalIncome = propertyData.results.cashFlow[key].rental;
+    propertyData.results.cashFlow[key].netCashFlow = propertyData.results.cashFlow[key].totalIncome -
+    propertyData.results.cashFlow[key].totalExpenses;
+
+    // Move to next month
+    currentDate.setMonth(currentDate.getMonth() + 1);
+}
+}
+
+    function calculateAnnualSummary() {
+    propertyData.results.annualSummary = {};
+
+    // Group cash flow by fiscal year
+    const cashFlowEntries = Object.values(propertyData.results.cashFlow);
+
+    cashFlowEntries.forEach(entry => {
+    const fiscalYearStart = propertyData.fiscalYearStartMonth;
+    let fiscalYear;
+
+    // Determine fiscal year based on the month
+    if (entry.month >= fiscalYearStart) {
+    fiscalYear = entry.year;
+} else {
+    fiscalYear = entry.year - 1;
+}
+
+    const key = `FY${fiscalYear}-${fiscalYear + 1}`;
+
+    if (!propertyData.results.annualSummary[key]) {
+    propertyData.results.annualSummary[key] = {
+    fiscalYear: key,
+    startYear: fiscalYear,
+    endYear: fiscalYear + 1,
+    totalExpenses: 0,
+    totalIncome: 0,
+    interestPaid: 0,
+    principalPaid: 0,
+    depreciation: 0,
+    taxBenefit: 0,
+    netPosition: 0
+};
+}
+
+    // Add expenses and income
+    propertyData.results.annualSummary[key].totalExpenses += entry.totalExpenses;
+    propertyData.results.annualSummary[key].totalIncome += entry.totalIncome;
+
+    // Calculate interest and principal paid
+    const primaryLoanPayment = propertyData.results.primaryLoan.schedule.find(p =>
+    p.date.getTime() === entry.date.getTime()
+    );
+
+    if (primaryLoanPayment) {
+    propertyData.results.annualSummary[key].interestPaid += primaryLoanPayment.interest;
+    propertyData.results.annualSummary[key].principalPaid += primaryLoanPayment.principal;
+}
+
+    if (propertyData.hasEquityLoan) {
+    const equityLoanPayment = propertyData.results.equityLoan.schedule.find(p =>
+    p.date.getTime() === entry.date.getTime()
+    );
+
+    if (equityLoanPayment) {
+    propertyData.results.annualSummary[key].interestPaid += equityLoanPayment.interest;
+    propertyData.results.annualSummary[key].principalPaid += equityLoanPayment.principal;
+}
+}
+});
+
+    // Calculate depreciation for each fiscal year
+    propertyData.depreciationItems.forEach(item => {
+    // Calculate depreciation amount per year
+    const annualDepreciation = item.cost * (item.rate / 100);
+
+    // Apply depreciation to appropriate fiscal years
+    Object.keys(propertyData.results.annualSummary).forEach(key => {
+    const summary = propertyData.results.annualSummary[key];
+    const fiscalYearEndDate = new Date(summary.endYear, propertyData.fiscalYearStartMonth, 0);
+
+    // Only apply if item was purchased before end of fiscal year
+    if (item.startDate <= fiscalYearEndDate) {
+    // For first year, prorate based on purchase date if needed
+    if (item.startDate.getFullYear() === summary.endYear ||
+    (item.startDate.getFullYear() === summary.startYear &&
+    item.startDate.getMonth() >= propertyData.fiscalYearStartMonth)) {
+
+    // Calculate months in first fiscal year
+    let startMonth = item.startDate.getMonth();
+    let endMonth = propertyData.fiscalYearStartMonth - 1;
+    if (endMonth < 0) endMonth = 11;
+
+    let monthsInFirstYear;
+    if (startMonth <= endMonth) {
+    monthsInFirstYear = endMonth - startMonth + 1;
+} else {
+    monthsInFirstYear = 12 - startMonth + endMonth + 1;
+}
+
+    const proratedDepreciation = annualDepreciation * (monthsInFirstYear / 12);
+    propertyData.results.annualSummary[key].depreciation += proratedDepreciation;
+} else {
+    // Full year depreciation
+    propertyData.results.annualSummary[key].depreciation += annualDepreciation;
+}
+}
+});
+});
+
+    // Calculate tax benefits and net position
+    Object.values(propertyData.results.annualSummary).forEach(summary => {
+    const totalDeductions = summary.totalExpenses + summary.depreciation;
+    const negativeGearing = Math.max(0, totalDeductions - summary.totalIncome);
+
+    // Tax benefit at 45% rate
+    summary.taxBenefit = negativeGearing * 0.45;
+
+    // Net position including tax benefits
+    summary.netPosition = summary.totalIncome - summary.totalExpenses + summary.taxBenefit;
+});
+}
+
+    function updateUI() {
+    // Update loan summary
+    elements.summaryElements.loanPrincipal.textContent = propertyData.results.primaryLoan.totalPrincipal.toFixed(2);
+    elements.summaryElements.loanTerm.textContent = propertyData.loanTerm;
+    elements.summaryElements.loanRate.textContent = propertyData.initialInterestRate.toFixed(2);
+    elements.summaryElements.monthlyPayment.textContent = propertyData.results.primaryLoan.monthlyPayment.toFixed(2);
+
+    // Update equity loan summary if applicable
+    if (propertyData.hasEquityLoan) {
+    elements.summaryElements.equityPrincipal.textContent = propertyData.results.equityLoan.totalPrincipal.toFixed(2);
+    elements.summaryElements.equityTerm.textContent = propertyData.equityLoan.term;
+    elements.summaryElements.equityRate.textContent = propertyData.equityLoan.interestRate.toFixed(2);
+    elements.summaryElements.equityMonthlyPayment.textContent = propertyData.results.equityLoan.monthlyPayment.toFixed(2);
+    document.getElementById('equityLoanSummary').classList.remove('hidden');
+} else {
+    document.getElementById('equityLoanSummary').classList.add('hidden');
+}
+
+    // Update total financing summary
+    const totalPrincipal = propertyData.results.primaryLoan.totalPrincipal +
+    (propertyData.hasEquityLoan ? propertyData.results.equityLoan.totalPrincipal : 0);
+
+    const totalInterest = propertyData.results.primaryLoan.totalInterest +
+    (propertyData.hasEquityLoan ? propertyData.results.equityLoan.totalInterest : 0);
+
+    const totalMonthlyPayment = propertyData.results.primaryLoan.monthlyPayment +
+    (propertyData.hasEquityLoan ? propertyData.results.equityLoan.monthlyPayment : 0);
+
+    elements.summaryElements.totalPrincipal.textContent = totalPrincipal.toFixed(2);
+    elements.summaryElements.totalInterest.textContent = totalInterest.toFixed(2);
+    elements.summaryElements.totalCost.textContent = (totalPrincipal + totalInterest).toFixed(2);
+    elements.summaryElements.totalMonthlyPayment.textContent = totalMonthlyPayment.toFixed(2);
+
+    // Update amortization table
+    updateAmortizationTable();
+
+    // Update cashflow selectors and tables
+    updateCashflowSelectors();
+    updateCashflowTable();
+
+    // Update annual summary table
+    updateAnnualSummaryTable();
+    updateTaxDetailsTable();
+
+    // Update charts
+    updateCharts();
+}
+
+    function updateAmortizationTable() {
+    const selectedLoan = elements.selectors.loanSelector.value;
+    const tbody = elements.tables.amortizationTable;
+
+    // Clear existing rows
+    tbody.innerHTML = '';
+
+    let schedule;
+
+    if (selectedLoan === 'primary') {
+    schedule = propertyData.results.primaryLoan.schedule;
+} else if (selectedLoan === 'equity') {
+    schedule = propertyData.results.equityLoan.schedule;
+} else { // combined
+    // Create a combined schedule by date
+    const combined = [];
+    const dateMap = new Map();
+
+    // Add primary loan schedule
+    propertyData.results.primaryLoan.schedule.forEach(entry => {
+    const dateKey = entry.date.toISOString();
+    dateMap.set(dateKey, entry);
+});
+
+    // Add equity loan schedule
+    if (propertyData.hasEquityLoan) {
+    propertyData.results.equityLoan.schedule.forEach(entry => {
+    const dateKey = entry.date.toISOString();
+    if (dateMap.has(dateKey)) {
+    const primaryEntry = dateMap.get(dateKey);
+    dateMap.set(dateKey, {
+    date: entry.date,
+    payment: primaryEntry.payment + entry.payment,
+    principal: primaryEntry.principal + entry.principal,
+    interest: primaryEntry.interest + entry.interest,
+    balance: primaryEntry.balance + entry.balance,
+    rate: (primaryEntry.rate + entry.rate) / 2, // Average rate
+    extraPayment: primaryEntry.extraPayment + entry.extraPayment
+});
+} else {
+    dateMap.set(dateKey, entry);
+}
+});
+}
+
+    // Convert map to array and sort by date
+    schedule = Array.from(dateMap.values()).sort((a, b) => a.date - b.date);
+}
+
+    // Add rows to table
+    schedule.forEach((entry, index) => {
+    const row = document.createElement('tr');
+
+    const dateFormatter = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short'
+});
+
+    row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${dateFormatter.format(entry.date)}</td>
+                    <td>${entry.payment.toFixed(2)}</td>
+                    <td>${entry.principal.toFixed(2)}</td>
+                    <td>${entry.interest.toFixed(2)}</td>
+                    <td>${entry.balance.toFixed(2)}</td>
+                    <td>${entry.rate.toFixed(2)}%</td>
+                `;
+
+    tbody.appendChild(row);
+
+    // Add extra payment row if applicable
+    if (entry.extraPayment > 0) {
+    const extraRow = document.createElement('tr');
+    extraRow.className = 'bg-gray-100';
+    extraRow.innerHTML = `
+                        <td></td>
+                        <td colspan="2">Extra payment: ${entry.extraPayment.toFixed(2)}</td>
+                        <td colspan="4">${entry.extraPaymentDescription || 'Extra payment'}</td>
+                    `;
+    tbody.appendChild(extraRow);
+}
+});
+}
+
+    function updateCashflowSelectors() {
+    // Get unique years from cash flow data
+    const years = Array.from(new Set(
+    Object.values(propertyData.results.cashFlow).map(entry => entry.year)
+    )).sort();
+
+    // Clear and update cashflow year selector
+    elements.selectors.cashflowYearSelector.innerHTML = '';
+    years.forEach(year => {
+    const option = document.createElement('option');
+    option.value = year;
+    option.textContent = year;
+    elements.selectors.cashflowYearSelector.appendChild(option);
+});
+
+    // Get unique fiscal years from annual summary
+    const fiscalYears = Object.keys(propertyData.results.annualSummary).sort();
+
+    // Clear and update fiscal year selector
+    elements.selectors.fiscalYearSelector.innerHTML = '';
+    fiscalYears.forEach(fiscalYear => {
+    const option = document.createElement('option');
+    option.value = fiscalYear;
+    option.textContent = fiscalYear;
+    elements.selectors.fiscalYearSelector.appendChild(option);
+});
+
+    // Select first options
+    if (years.length > 0) {
+    elements.selectors.cashflowYearSelector.value = years[0].toString();
+}
+
+    if (fiscalYears.length > 0) {
+    elements.selectors.fiscalYearSelector.value = fiscalYears[0];
+}
+}
+
+    function updateCashflowTable() {
+    const selectedYear = parseInt(elements.selectors.cashflowYearSelector.value);
+    const tbody = elements.tables.cashflowTable;
+
+    // Clear existing rows
+    tbody.innerHTML = '';
+
+    // Filter cash flow entries for selected year
+    const entries = Object.values(propertyData.results.cashFlow)
+    .filter(entry => entry.year === selectedYear)
+    .sort((a, b) => a.month - b.month);
+
+    // Month names
+    const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    // Add rows to table
+    entries.forEach(entry => {
+    const row = document.createElement('tr');
+
+    row.innerHTML = `
+                    <td>${monthNames[entry.month]}</td>
+                    <td>${entry.loanPayment.toFixed(2)}</td>
+                    <td>${(entry.totalExpenses - entry.loanPayment).toFixed(2)}</td>
+                    <td>${entry.rental.toFixed(2)}</td>
+                    <td class="${entry.netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}">
+                        ${entry.netCashFlow.toFixed(2)}
+                    </td>
+                    <td>
+                        <button class="view-details bg-blue-500 text-white py-1 px-2 rounded hover:bg-blue-600"
+                                data-year="${entry.year}" data-month="${entry.month}">
+                            View
+                        </button>
+                    </td>
+                `;
+
+    tbody.appendChild(row);
+});
+
+    // Add event listeners to view details buttons
+    document.querySelectorAll('.view-details').forEach(button => {
+    button.addEventListener('click', function() {
+    const year = parseInt(this.getAttribute('data-year'));
+    const month = parseInt(this.getAttribute('data-month'));
+    showExpenseDetails(year, month);
+});
+});
+}
+
+    function showExpenseDetails(year, month) {
+    const key = `${year}-${month}`;
+    const entry = propertyData.results.cashFlow[key];
+
+    if (!entry) return;
+
+    // Month names
+    const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    // Set month name in header
+    elements.expenseDetailsMonth.textContent = `${monthNames[month]} ${year}`;
+
+    // Clear existing rows
+    elements.tables.expenseDetailsTable.innerHTML = '';
+
+    // Add income row
+    if (entry.rental > 0) {
+    const incomeRow = document.createElement('tr');
+    incomeRow.className = 'bg-green-50';
+    incomeRow.innerHTML = `
+                    <td>Rental Income</td>
+                    <td class="text-green-600">${entry.rental.toFixed(2)}</td>
+                    <td>Rental payment</td>
+                `;
+    elements.tables.expenseDetailsTable.appendChild(incomeRow);
+}
+
+    // Add expense rows
+    entry.expenses.forEach(expense => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+                    <td>${expense.category}</td>
+                    <td class="text-red-600">${expense.amount.toFixed(2)}</td>
+                    <td>${expense.notes || ''}</td>
+                `;
+    elements.tables.expenseDetailsTable.appendChild(row);
+});
+
+    // Show expense details panel
+    elements.expenseDetails.classList.remove('hidden');
+}
+
+    function updateAnnualSummaryTable() {
+    const tbody = elements.tables.annualSummaryTable;
+
+    // Clear existing rows
+    tbody.innerHTML = '';
+
+    // Sort fiscal years
+    const summaries = Object.values(propertyData.results.annualSummary).sort((a, b) =>
+    a.startYear - b.startYear
+    );
+
+    // Add rows to table
+    summaries.forEach(summary => {
+    const row = document.createElement('tr');
+
+    row.innerHTML = `
+                    <td>${summary.fiscalYear}</td>
+                    <td>${summary.totalExpenses.toFixed(2)}</td>
+                    <td>${summary.totalIncome.toFixed(2)}</td>
+                    <td>${summary.interestPaid.toFixed(2)}</td>
+                    <td>${summary.principalPaid.toFixed(2)}</td>
+                    <td>${summary.depreciation.toFixed(2)}</td>
+                    <td>${summary.taxBenefit.toFixed(2)}</td>
+                    <td class="${summary.netPosition >= 0 ? 'text-green-600' : 'text-red-600'}">
+                        ${summary.netPosition.toFixed(2)}
+                    </td>
+                `;
+
+    tbody.appendChild(row);
+});
+}
+
+    function updateTaxDetailsTable() {
+    const selectedFiscalYear = elements.selectors.fiscalYearSelector.value;
+    const summary = propertyData.results.annualSummary[selectedFiscalYear];
+
+    if (!summary) return;
+
+    const tbody = elements.tables.taxDetailsTable;
+
+    // Clear existing rows
+    tbody.innerHTML = '';
+
+    // Add income row
+    const incomeRow = document.createElement('tr');
+    incomeRow.className = 'bg-green-50';
+    incomeRow.innerHTML = `
+                <td>Rental Income</td>
+                <td class="text-green-600">${summary.totalIncome.toFixed(2)}</td>
+                <td>Total rental income for fiscal year</td>
+            `;
+    tbody.appendChild(incomeRow);
+
+    // Add expense categories
+    const expenseCategories = [
+{ name: 'Loan Interest', amount: summary.interestPaid, notes: 'Tax deductible interest payments' },
+{ name: 'Depreciation', amount: summary.depreciation, notes: 'Building and fixtures depreciation' },
+{ name: 'Property Expenses', amount: summary.totalExpenses - summary.interestPaid - summary.principalPaid, notes: 'Insurance, rates, repairs, etc.' }
+    ];
+
+    expenseCategories.forEach(category => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+                    <td>${category.name}</td>
+                    <td class="text-red-600">${category.amount.toFixed(2)}</td>
+                    <td>${category.notes}</td>
+                `;
+    tbody.appendChild(row);
+});
+
+    // Add summary rows
+    const totalDeductionsRow = document.createElement('tr');
+    totalDeductionsRow.className = 'font-semibold bg-gray-100';
+    const totalDeductions = summary.totalExpenses - summary.principalPaid + summary.depreciation;
+
+    totalDeductionsRow.innerHTML = `
+                <td>Total Deductions</td>
+                <td>${totalDeductions.toFixed(2)}</td>
+                <td>All tax-deductible expenses</td>
+            `;
+    tbody.appendChild(totalDeductionsRow);
+
+    const netPositionRow = document.createElement('tr');
+    netPositionRow.className = 'font-semibold';
+    const netIncome = summary.totalIncome - totalDeductions;
+    const isNegative = netIncome < 0;
+
+    netPositionRow.innerHTML = `
+                <td>Net Income/Loss</td>
+                <td class="${isNegative ? 'text-red-600' : 'text-green-600'}">
+                    ${netIncome.toFixed(2)}
+                </td>
+                <td>${isNegative ? 'Property is negatively geared' : 'Property is positively geared'}</td>
+            `;
+    tbody.appendChild(netPositionRow);
+
+    if (isNegative) {
+    const taxBenefitRow = document.createElement('tr');
+    taxBenefitRow.className = 'font-semibold bg-blue-50';
+
+    taxBenefitRow.innerHTML = `
+                    <td>Tax Benefit (45%)</td>
+                    <td class="text-blue-600">${summary.taxBenefit.toFixed(2)}</td>
+                    <td>Estimated tax reduction at 45% marginal rate</td>
+                `;
+    tbody.appendChild(taxBenefitRow);
+
+    const afterTaxRow = document.createElement('tr');
+    afterTaxRow.className = 'font-semibold bg-yellow-50';
+
+    afterTaxRow.innerHTML = `
+                    <td>After-Tax Position</td>
+                    <td class="${summary.netPosition >= 0 ? 'text-green-600' : 'text-red-600'}">
+                        ${summary.netPosition.toFixed(2)}
+                    </td>
+                    <td>Net position after tax benefits</td>
+                `;
+    tbody.appendChild(afterTaxRow);
+}
+}
+
+    function updateCharts() {
+    // Initialize charts context if needed
+    if (!charts.cashflow && elements.chartCanvases.cashflowChart) {
+    charts.cashflow = new Chart(elements.chartCanvases.cashflowChart, {
+    type: 'bar',
+    data: {
+    labels: [],
+    datasets: [
+{
+    label: 'Income',
+    backgroundColor: 'rgba(34, 197, 94, 0.5)',
+    borderColor: 'rgba(34, 197, 94, 1)',
+    borderWidth: 1,
+    data: []
+},
+{
+    label: 'Expenses',
+    backgroundColor: 'rgba(239, 68, 68, 0.5)',
+    borderColor: 'rgba(239, 68, 68, 1)',
+    borderWidth: 1,
+    data: []
+},
+{
+    label: 'Net Cash Flow',
+    type: 'line',
+    backgroundColor: 'rgba(59, 130, 246, 0.5)',
+    borderColor: 'rgba(59, 130, 246, 1)',
+    borderWidth: 2,
+    pointRadius: 4,
+    fill: false,
+    tension: 0.1,
+    data: []
+}
+    ]
+},
+    options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+    y: {
+    beginAtZero: true,
+    title: {
+    display: true,
+    text: 'Amount ($)'
+}
+}
+}
+}
+});
+}
+
+    if (!charts.loanBalance && elements.chartCanvases.loanBalanceChart) {
+    charts.loanBalance = new Chart(elements.chartCanvases.loanBalanceChart, {
+    type: 'line',
+    data: {
+    labels: [],
+    datasets: [
+{
+    label: 'Primary Loan Balance',
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    borderColor: 'rgba(59, 130, 246, 1)',
+    borderWidth: 2,
+    pointRadius: 1,
+    data: []
+},
+{
+    label: 'Equity Loan Balance',
+    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+    borderColor: 'rgba(139, 92, 246, 1)',
+    borderWidth: 2,
+    pointRadius: 1,
+    data: []
+}
+    ]
+},
+    options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+    y: {
+    beginAtZero: true,
+    title: {
+    display: true,
+    text: 'Balance ($)'
+}
+}
+}
+}
+});
+}
+
+    if (!charts.expenseBreakdown && elements.chartCanvases.expenseBreakdownChart) {
+    charts.expenseBreakdown = new Chart(elements.chartCanvases.expenseBreakdownChart, {
+    type: 'doughnut',
+    data: {
+    labels: [],
+    datasets: [{
+    label: 'Expenses',
+    backgroundColor: [
+    'rgba(239, 68, 68, 0.7)',
+    'rgba(249, 115, 22, 0.7)',
+    'rgba(234, 179, 8, 0.7)',
+    'rgba(59, 130, 246, 0.7)',
+    'rgba(139, 92, 246, 0.7)',
+    'rgba(236, 72, 153, 0.7)',
+    'rgba(16, 185, 129, 0.7)',
+    'rgba(125, 211, 252, 0.7)'
+    ],
+    borderColor: [
+    'rgba(239, 68, 68, 1)',
+    'rgba(249, 115, 22, 1)',
+    'rgba(234, 179, 8, 1)',
+    'rgba(59, 130, 246, 1)',
+    'rgba(139, 92, 246, 1)',
+    'rgba(236, 72, 153, 1)',
+    'rgba(16, 185, 129, 1)',
+    'rgba(125, 211, 252, 1)'
+    ],
+    borderWidth: 1,
+    data: []
+}]
+},
+    options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+    legend: {
+    position: 'right'
+}
+}
+}
+});
+}
+
+    if (!charts.annualSummary && elements.chartCanvases.annualSummaryChart) {
+    charts.annualSummary = new Chart(elements.chartCanvases.annualSummaryChart, {
+    type: 'bar',
+    data: {
+    labels: [],
+    datasets: [
+{
+    label: 'Income',
+    backgroundColor: 'rgba(34, 197, 94, 0.5)',
+    borderColor: 'rgba(34, 197, 94, 1)',
+    borderWidth: 1,
+    data: []
+},
+{
+    label: 'Expenses',
+    backgroundColor: 'rgba(239, 68, 68, 0.5)',
+    borderColor: 'rgba(239, 68, 68, 1)',
+    borderWidth: 1,
+    data: []
+},
+{
+    label: 'Tax Benefit',
+    backgroundColor: 'rgba(59, 130, 246, 0.5)',
+    borderColor: 'rgba(59, 130, 246, 1)',
+    borderWidth: 1,
+    data: []
+},
+{
+    label: 'Net Position',
+    type: 'line',
+    backgroundColor: 'rgba(139, 92, 246, 0.5)',
+    borderColor: 'rgba(139, 92, 246, 1)',
+    borderWidth: 2,
+    pointRadius: 4,
+    fill: false,
+    tension: 0.1,
+    data: []
+}
+    ]
+},
+    options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+    y: {
+    title: {
+    display: true,
+    text: 'Amount ($)'
+}
+}
+}
+}
+});
+}
+
+    // Update Cashflow Chart
+    if (charts.cashflow) {
+    const monthNames = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+
+    // Get the latest year's data
+    const selectedYear = parseInt(elements.selectors.cashflowYearSelector.value);
+
+    const entries = Object.values(propertyData.results.cashFlow)
+    .filter(entry => entry.year === selectedYear)
+    .sort((a, b) => a.month - b.month);
+
+    const labels = entries.map(entry => monthNames[entry.month]);
+    const incomeData = entries.map(entry => entry.totalIncome);
+    const expenseData = entries.map(entry => entry.totalExpenses);
+    const netData = entries.map(entry => entry.netCashFlow);
+
+    charts.cashflow.data.labels = labels;
+    charts.cashflow.data.datasets[0].data = incomeData;
+    charts.cashflow.data.datasets[1].data = expenseData;
+    charts.cashflow.data.datasets[2].data = netData;
+
+    charts.cashflow.update();
+}
+
+    // Update Loan Balance Chart
+    if (charts.loanBalance) {
+    const dateFormatter = new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short'
+});
+
+    // Sample the loan schedules (e.g., every 6 months) to keep the chart manageable
+    const sampleInterval = 6;
+
+    // Primary loan balance
+    const primarySchedule = propertyData.results.primaryLoan.schedule;
+    const primaryLabels = [];
+    const primaryData = [];
+
+    for (let i = 0; i < primarySchedule.length; i += sampleInterval) {
+    const entry = primarySchedule[i];
+    primaryLabels.push(dateFormatter.format(entry.date));
+    primaryData.push(entry.balance);
+}
+
+    // Equity loan balance
+    const equitySchedule = propertyData.hasEquityLoan ? propertyData.results.equityLoan.schedule : [];
+    const equityData = [];
+
+    for (let i = 0; i < equitySchedule.length; i += sampleInterval) {
+    equityData.push(equitySchedule[i].balance);
+}
+
+    charts.loanBalance.data.labels = primaryLabels;
+    charts.loanBalance.data.datasets[0].data = primaryData;
+    charts.loanBalance.data.datasets[1].data = equityData;
+
+    // Show/hide equity loan dataset
+    charts.loanBalance.data.datasets[1].hidden = !propertyData.hasEquityLoan;
+
+    charts.loanBalance.update();
+}
+
+    // Update Expense Breakdown Chart
+    if (charts.expenseBreakdown) {
+    // Aggregate expenses by category
+    const expenseCategories = {};
+
+    // Go through all cash flow entries and collect expenses
+    Object.values(propertyData.results.cashFlow).forEach(entry => {
+    entry.expenses.forEach(expense => {
+    const category = expense.category;
+    if (!expenseCategories[category]) {
+    expenseCategories[category] = 0;
+}
+    expenseCategories[category] += expense.amount;
+});
+});
+
+    // Sort categories by amount and take top 7, combine the rest
+    const sortedCategories = Object.entries(expenseCategories)
+    .sort((a, b) => b[1] - a[1]);
+
+    const topCategories = sortedCategories.slice(0, 7);
+    const otherCategories = sortedCategories.slice(7);
+
+    let otherTotal = 0;
+    otherCategories.forEach(([_, amount]) => {
+    otherTotal += amount;
+});
+
+    const labels = topCategories.map(([category]) => category);
+    const data = topCategories.map(([_, amount]) => amount);
+
+    if (otherTotal > 0) {
+    labels.push('Other');
+    data.push(otherTotal);
+}
+
+    charts.expenseBreakdown.data.labels = labels;
+    charts.expenseBreakdown.data.datasets[0].data = data;
+
+    charts.expenseBreakdown.update();
+}
+
+    // Update Annual Summary Chart
+    if (charts.annualSummary) {
+    const summaries = Object.values(propertyData.results.annualSummary)
+    .sort((a, b) => a.startYear - b.startYear);
+
+    const labels = summaries.map(summary => summary.fiscalYear);
+    const incomeData = summaries.map(summary => summary.totalIncome);
+    const expenseData = summaries.map(summary => summary.totalExpenses);
+    const taxBenefitData = summaries.map(summary => summary.taxBenefit);
+    const netPositionData = summaries.map(summary => summary.netPosition);
+
+    charts.annualSummary.data.labels = labels;
+    charts.annualSummary.data.datasets[0].data = incomeData;
+    charts.annualSummary.data.datasets[1].data = expenseData;
+    charts.annualSummary.data.datasets[2].data = taxBenefitData;
+    charts.annualSummary.data.datasets[3].data = netPositionData;
+
+    charts.annualSummary.update();
+}
+}
+</script>
+</body>
+</html>
+ementFee: document.getElementById('bankSettl
