@@ -53,7 +53,7 @@ export class CashFlowCalculator {
                 cashFlow[key].expenses.push({
                     category: 'Primary Loan Payment',
                     amount: primaryPayment,
-                    notes: `Interest: ${primaryLoanPayment.interest.toFixed(2)}, Principal: ${primaryLoanPayment.principal.toFixed(2)}`
+                    notes: `Interest: $${primaryLoanPayment.interest.toFixed(2)}, Principal: $${primaryLoanPayment.principal.toFixed(2)}`
                 });
             }
 
@@ -66,7 +66,7 @@ export class CashFlowCalculator {
                     cashFlow[key].expenses.push({
                         category: 'Equity Loan Payment',
                         amount: equityPayment,
-                        notes: `Interest: ${equityLoanPayment.interest.toFixed(2)}, Principal: ${equityLoanPayment.principal.toFixed(2)}`
+                        notes: `Interest: $${equityLoanPayment.interest.toFixed(2)}, Principal: $${equityLoanPayment.principal.toFixed(2)}`
                     });
                 }
             }
@@ -215,7 +215,7 @@ export class CashFlowCalculator {
                 cashFlowEntry.expenses.push({
                     category: 'Agent Fees',
                     amount: agentFees,
-                    notes: `${propertyData.settlementCosts.agentFeesPercentage}% of rental income (${fortnightRentalIncome.toFixed(2)})`
+                    notes: `${propertyData.settlementCosts.agentFeesPercentage}% of rental income ($${fortnightRentalIncome.toFixed(2)})`
                 });
             }
         }
@@ -253,7 +253,4 @@ export class CashFlowCalculator {
             }
         });
     }
-}[key], currentDate, propertyData);
-
-// Add any misc repairs for this month
-this.addMiscRepairs(cashFlow
+}

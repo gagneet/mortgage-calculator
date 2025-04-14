@@ -211,6 +211,10 @@ export class FormInputHelper {
                         container.innerHTML = `
                             <div class="w-1/4">
                                 <label>Description</label>
+                                <input type="text" class="item-description w-full" value="${item.Description}">
+                            </div>
+                            <div class="w-1/4">
+                                <label>Cost Basis ($)</label>
                                 <input type="number" min="0" step="100" class="item-cost w-full" value="${item.Cost}">
                             </div>
                             <div class="w-1/4">
@@ -276,20 +280,30 @@ export class FormInputHelper {
         propertyData.resetResults();
 
         // Collect loan details
-        propertyData.loanStartDate = new Date(elements.inputFields.loanStartDate.value);
-        propertyData.contractPrice = parseFloat(elements.inputFields.contractPrice.value) || 0;
-        propertyData.initialDeposit = parseFloat(elements.inputFields.initialDeposit.value) || 0;
-        propertyData.loanAmount = parseFloat(elements.inputFields.loanAmount.value) || 0;
-        propertyData.builderRebate = parseFloat(elements.inputFields.builderRebate.value) || 0;
-        propertyData.loanTerm = parseInt(elements.inputFields.loanTerm.value) || 30;
-        propertyData.loanType = elements.inputFields.loanType.value;
-        propertyData.fixedTerm = parseInt(elements.inputFields.fixedTerm.value) || 5;
-        propertyData.initialInterestRate = parseFloat(elements.inputFields.initialInterestRate.value) || 4.5;
-        propertyData.fiscalYearStartMonth = parseInt(elements.inputFields.fiscalYearStartMonth.value) || 6;
+        if (elements.inputFields.loanStartDate && elements.inputFields.loanStartDate.value) {
+            propertyData.loanStartDate = new Date(elements.inputFields.loanStartDate.value);
+        } else {
+            propertyData.loanStartDate = new Date();
+        }
+
+        propertyData.contractPrice = parseFloat(elements.inputFields.contractPrice?.value) || 0;
+        propertyData.initialDeposit = parseFloat(elements.inputFields.initialDeposit?.value) || 0;
+        propertyData.loanAmount = parseFloat(elements.inputFields.loanAmount?.value) || 0;
+        propertyData.builderRebate = parseFloat(elements.inputFields.builderRebate?.value) || 0;
+        propertyData.loanTerm = parseInt(elements.inputFields.loanTerm?.value) || 30;
+        propertyData.loanType = elements.inputFields.loanType?.value || 'variable';
+        propertyData.fixedTerm = parseInt(elements.inputFields.fixedTerm?.value) || 5;
+        propertyData.initialInterestRate = parseFloat(elements.inputFields.initialInterestRate?.value) || 4.5;
+        propertyData.fiscalYearStartMonth = parseInt(elements.inputFields.fiscalYearStartMonth?.value) || 6;
 
         // Rental details
-        propertyData.rentalStartDate = new Date(elements.inputFields.rentalStartDate.value);
-        propertyData.weeklyRent = parseFloat(elements.inputFields.weeklyRent.value) || 0;
+        if (elements.inputFields.rentalStartDate && elements.inputFields.rentalStartDate.value) {
+            propertyData.rentalStartDate = new Date(elements.inputFields.rentalStartDate.value);
+        } else {
+            propertyData.rentalStartDate = new Date();
+        }
+
+        propertyData.weeklyRent = parseFloat(elements.inputFields.weeklyRent?.value) || 0;
 
         // Settlement costs
         propertyData.settlementCosts = this.collectSettlementCosts(elements);
@@ -313,14 +327,14 @@ export class FormInputHelper {
         propertyData.hasSplitLoan = elements.inputFields.hasSplitLoan && elements.inputFields.hasSplitLoan.value === 'yes';
         if (propertyData.hasSplitLoan) {
             propertyData.splitLoan = {
-                amount1: parseFloat(elements.inputFields.splitLoanAmount1.value) || 0,
-                amount2: parseFloat(elements.inputFields.splitLoanAmount2.value) || 0,
-                rate1: parseFloat(elements.inputFields.splitLoanRate1.value) || 4.5,
-                rate2: parseFloat(elements.inputFields.splitLoanRate2.value) || 5.0,
-                type1: elements.inputFields.splitLoanType1.value || 'variable',
-                type2: elements.inputFields.splitLoanType2.value || 'variable',
-                fixedTerm1: parseInt(elements.inputFields.splitLoanFixedTerm1.value) || 5,
-                fixedTerm2: parseInt(elements.inputFields.splitLoanFixedTerm2.value) || 5
+                amount1: parseFloat(elements.inputFields.splitLoanAmount1?.value) || 0,
+                amount2: parseFloat(elements.inputFields.splitLoanAmount2?.value) || 0,
+                rate1: parseFloat(elements.inputFields.splitLoanRate1?.value) || 4.5,
+                rate2: parseFloat(elements.inputFields.splitLoanRate2?.value) || 5.0,
+                type1: elements.inputFields.splitLoanType1?.value || 'variable',
+                type2: elements.inputFields.splitLoanType2?.value || 'variable',
+                fixedTerm1: parseInt(elements.inputFields.splitLoanFixedTerm1?.value) || 5,
+                fixedTerm2: parseInt(elements.inputFields.splitLoanFixedTerm2?.value) || 5
             };
         }
 
@@ -328,43 +342,45 @@ export class FormInputHelper {
         propertyData.hasEquityLoan = elements.inputFields.hasEquityLoan && elements.inputFields.hasEquityLoan.value === 'yes';
         if (propertyData.hasEquityLoan) {
             propertyData.equityLoan = {
-                startDate: new Date(elements.inputFields.equityLoanStartDate.value),
-                amount: parseFloat(elements.inputFields.equityLoanAmount.value) || 0,
-                term: parseInt(elements.inputFields.equityLoanTerm.value) || 30,
-                interestRate: parseFloat(elements.inputFields.equityLoanInterestRate.value) || 4.5,
-                type: elements.inputFields.equityLoanType.value || 'variable',
-                fixedTerm: parseInt(elements.inputFields.equityFixedTerm.value) || 5
+                startDate: elements.inputFields.equityLoanStartDate && elements.inputFields.equityLoanStartDate.value
+                    ? new Date(elements.inputFields.equityLoanStartDate.value)
+                    : new Date(),
+                amount: parseFloat(elements.inputFields.equityLoanAmount?.value) || 0,
+                term: parseInt(elements.inputFields.equityLoanTerm?.value) || 30,
+                interestRate: parseFloat(elements.inputFields.equityLoanInterestRate?.value) || 4.5,
+                type: elements.inputFields.equityLoanType?.value || 'variable',
+                fixedTerm: parseInt(elements.inputFields.equityFixedTerm?.value) || 5
             };
         }
     }
 
     collectSettlementCosts(elements) {
         return {
-            stampDuty: parseFloat(elements.inputFields.stampDuty.value) || 0,
-            transferFee: parseFloat(elements.inputFields.transferFee.value) || 0,
-            mortgageFee: parseFloat(elements.inputFields.mortgageFee.value) || 0,
-            governmentFee: parseFloat(elements.inputFields.governmentFee.value) || 0,
-            bankWealthPackage: parseFloat(elements.inputFields.bankWealthPackage.value) || 0,
-            solicitorFees: parseFloat(elements.inputFields.solicitorFees.value) || 0,
-            conveyancerFees: parseFloat(elements.inputFields.conveyancerFees.value) || 0,
-            propertyInspection: parseFloat(elements.inputFields.propertyInspection.value) || 0,
-            furnishings: parseFloat(elements.inputFields.furnishings.value) || 0,
-            bankChequeFee: parseFloat(elements.inputFields.bankChequeFee.value) || 0,
-            bankSettlementFee: parseFloat(elements.inputFields.bankSettlementFee.value) || 0,
-            landTitlesOfficeFees: parseFloat(elements.inputFields.landTitlesOfficeFees.value) || 0,
-            initialUtilities: parseFloat(elements.inputFields.initialUtilities.value) || 0,
-            initialStrataFees: parseFloat(elements.inputFields.initialStrataFees.value) || 0,
-            agentFeesPercentage: parseFloat(elements.inputFields.agentFeesPercentage.value) || 0
+            stampDuty: parseFloat(elements.inputFields.stampDuty?.value) || 0,
+            transferFee: parseFloat(elements.inputFields.transferFee?.value) || 0,
+            mortgageFee: parseFloat(elements.inputFields.mortgageFee?.value) || 0,
+            governmentFee: parseFloat(elements.inputFields.governmentFee?.value) || 0,
+            bankWealthPackage: parseFloat(elements.inputFields.bankWealthPackage?.value) || 0,
+            solicitorFees: parseFloat(elements.inputFields.solicitorFees?.value) || 0,
+            conveyancerFees: parseFloat(elements.inputFields.conveyancerFees?.value) || 0,
+            propertyInspection: parseFloat(elements.inputFields.propertyInspection?.value) || 0,
+            furnishings: parseFloat(elements.inputFields.furnishings?.value) || 0,
+            bankChequeFee: parseFloat(elements.inputFields.bankChequeFee?.value) || 0,
+            bankSettlementFee: parseFloat(elements.inputFields.bankSettlementFee?.value) || 0,
+            landTitlesOfficeFees: parseFloat(elements.inputFields.landTitlesOfficeFees?.value) || 0,
+            initialUtilities: parseFloat(elements.inputFields.initialUtilities?.value) || 0,
+            initialStrataFees: parseFloat(elements.inputFields.initialStrataFees?.value) || 0,
+            agentFeesPercentage: parseFloat(elements.inputFields.agentFeesPercentage?.value) || 0
         };
     }
 
     collectRecurringExpenses(elements) {
         return {
-            landTax: parseFloat(elements.inputFields.landTax.value) || 0,
-            councilRates: parseFloat(elements.inputFields.councilRates.value) || 0,
-            strataRates: parseFloat(elements.inputFields.strataRates.value) || 0,
-            waterRates: parseFloat(elements.inputFields.waterRates.value) || 0,
-            insurance: parseFloat(elements.inputFields.insurance.value) || 0
+            landTax: parseFloat(elements.inputFields.landTax?.value) || 0,
+            councilRates: parseFloat(elements.inputFields.councilRates?.value) || 0,
+            strataRates: parseFloat(elements.inputFields.strataRates?.value) || 0,
+            waterRates: parseFloat(elements.inputFields.waterRates?.value) || 0,
+            insurance: parseFloat(elements.inputFields.insurance?.value) || 0
         };
     }
 
@@ -472,8 +488,4 @@ export class FormInputHelper {
 
         return items;
     }
-} type="text" class="item-description w-full" value="${item.Description}">
-    </div>
-<div class="w-1/4">
-    <label>Cost Basis ($)</label>
-    <input
+}
