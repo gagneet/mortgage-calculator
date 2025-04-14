@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Property Financial Calculator</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <style>
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .nav-tab.active {
+            border-bottom: 2px solid #4F46E5;
+            color: #4F46E5;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        input[type="date"], input[type="number"], select {
+            width: 100%;
+            padding: 8px;
+            margin: 4px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-center mb-8">Investment Property Financial Calculator</h1>
+
+    <!-- Main Navigation Tabs -->
+    <div class="flex border-b mb-6">
+        <button class="nav-tab active py-2 px-4 font-medium" data-tab="inputs">Inputs</button>
+        <button class="nav-tab py-2 px-4 font-medium" data-tab="amortization">Loan Schedule</button>
+        <button class="nav-tab py-2 px-4 font-medium" data-tab="cashflow">Monthly Cash Flow</button>
+        <button class="nav-tab py-2 px-4 font-medium" data-tab="summary">Annual Summary</button>
+        <button class="nav-tab py-2 px-4 font-medium" data-tab="dashboard">Dashboard</button>
+    </div>
+
+    <!-- Inputs Tab -->
+    <div id="inputs" class="tab-content active">
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Property and Loan Details</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-2">Loan Start Date</label>
+                    <input type="date" id="loanStartDate" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-2">Contract Price ($)</label>
+                    <input type="number" id="contractPrice" min="0" step="1000" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-2">Initial Deposit ($)</label>
+                    <input type="number" id="initialDeposit" min="0" step="1000" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-2">Loan Amount ($) (optional)</label>
+                    <input type="number" id="loanAmount" min="0" step="1000" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-2">Builder Rebate ($)</label>
+                    <input type="number" id="builderRebate" min="0" step="100" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Loan Term (years)</label>
+                    <input type="number" id="loanTerm" min="1" max="30" step="1" class="w-full" value="30">
+                </div>
+                <div>
+                    <label class="block mb-2">Loan Type</label>
+                    <select id="loanType" class="w-full">
+                        <option value="variable">Variable</option>
+                        <option value="fixed">Fixed</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2">Fixed Term (years, if applicable)</label>
+                    <input type="number" id="fixedTerm" min="1" max="10" step="1" class="w-full" value="5">
+                </div>
+                <div>
+                    <label class="block mb-2">Initial Interest Rate (%)</label>
+                    <input type="number" id="initialInterestRate" min="0" max="20" step="0.01" class="w-full" value="4.5">
+                </div>
+                <div>
+                    <label class="block mb-2">Fiscal Year Start Month</label>
+                    <select id="fiscalYearStartMonth" class="w-full">
+                        <option value="0">January</option>
+                        <option value="1">February</option>
+                        <option value="2">March</option>
+                        <option value="3">April</option>
+                        <option value="4">May</option>
+                        <option value="5">June</option>
+                        <option value="6">July</option>
+                        <option value="7">August</option>
+                        <option value="8">September</option>
+                        <option value="9">October</option>
+                        <option value="10">November</option>
+                        <option value="11">December</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2">Rental Start Date</label>
+                    <input type="date" id="rentalStartDate" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-2">Weekly Rent Amount ($)</label>
+                    <input type="number" id="weeklyRent" min="0" step="10" class="w-full" value="0">
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Settlement Costs</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block mb-2">Stamp/Conveyance Duty ($)</label>
+                    <input type="number" id="stampDuty" min="0" step="100" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Transfer Fee ($)</label>
+                    <input type="number" id="transferFee" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Mortgage Fee ($)</label>
+                    <input type="number" id="mortgageFee" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Government Fee ($)</label>
+                    <input type="number" id="governmentFee" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Bank Wealth Package ($)</label>
+                    <input type="number" id="bankWealthPackage" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Solicitor Fees ($)</label>
+                    <input type="number" id="solicitorFees" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Conveyance Fees ($)</label>
+                    <input type="number" id="conveyanceFees" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Property Inspection ($)</label>
+                    <input type="number" id="propertyInspection" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Before Moving in Furnishings ($)</label>
+                    <input type="number" id="furnishings" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Bank Cheque Fee ($)</label>
+                    <input type="number" id="bankChequeFee" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Bank Settlement Fee ($)</label>
+                    <input type="number" id="bankSettlementFee" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Land Titles Office Fees ($)</label>
+                    <input type="number" id="landTitlesOfficeFees" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Initial Utilities ($)</label>
+                    <input type="number" id="initialUtilities" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Initial Strata Fees ($)</label>
+                    <input type="number" id="initialStrataFees" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Agent Fees (% of rent)</label>
+                    <input type="number" id="agentFeesPercentage" min="0" max="100" step="0.1" class="w-full" value="7.5">
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Recurring Expenses</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-2">Land Tax (yearly rate, $)</label>
+                    <input type="number" id="landTax" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Council Rates (yearly rate, $)</label>
+                    <input type="number" id="councilRates" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Strata Rates (yearly rate, $)</label>
+                    <input type="number" id="strataRates" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Water Rates (yearly rate, $)</label>
+                    <input type="number" id="waterRates" min="0" step="10" class="w-full" value="0">
+                </div>
+                <div>
+                    <label class="block mb-2">Home & Contents Insurance (yearly rate, $)</label>
+                    <input type="number" id="insurance" min="0" step="10" class="w-full" value="0">
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Split Loan (Primary)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-2">Enable Split Loan?</label>
+                    <select id="hasSplitLoan" class="w-full">
+                        <option value="no">No</option>
+                        <option value="yes">Yes</option>
+                    </select>
+                </div>
+            </div>
+            <div id="splitLoanDetails" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-2">Split Loan Amount 1 ($)</label>
+                    <input type="number" id="splitLoanAmount1" min="0" step="1000" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-2">Split Loan Amount 2 ($)</label>
+                    <input type="number" id="splitLoanAmount2" min="0" step="1000" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-2">Split Loan 1 Interest Rate (%)</label>
+                    <input type="number" id="splitLoanRate1" min="0" max="20" step="0.01" class="w-full" value="4.5">
+                </div>
+                <div>
+                    <label class="block mb-2">Split Loan 2 Interest Rate (%)</label>
+                    <input type="number" id="splitLoanRate2" min="0" max="20" step="0.01" class="w-full" value="5.0">
+                </div>
+                <div>
+                    <label class="block mb-2">Split Loan 1 Type</label>
+                    <select id="splitLoanType1" class="w-full">
+                        <option value="variable">Variable</option>
+                        <option value="fixed">Fixed</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2">Split Loan 2 Type</label>
+                    <select id="splitLoanType2" class="w-full">
+                        <option value="variable">Variable</option>
+                        <option value="fixed">Fixed</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2">Split Loan 1 Fixed Term (years, if applicable)</label>
+                    <input type="number" id="splitLoanFixedTerm1" min="1" max="10" step="1" class="w-full" value="5">
+                </div>
+                <div>
+                    <label class="block mb-2">Split Loan 2 Fixed Term (years, if applicable)</label>
+                    <input type="number" id="splitLoanFixedTerm2" min="1" max="10" step="1" class="w-full" value="5">
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Additional Loan (Equity)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-2">Add Equity Loan?</label>
+                    <select id="hasEquityLoan" class="w-full">
+                        <option value="no">No</option>
+                        <option value="yes">Yes</option>
+                    </select>
+                </div>
+            </div>
+            <div id="equityLoanDetails" class="hidden mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block mb-2">Equity Loan Start Date</label>
+                    <input type="date" id="equityLoanStartDate" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-2">Equity Loan Amount ($)</label>
+                    <input type="number" id="equityLoanAmount" min="0" step="1000" class="w-full">
+                </div>
+                <div>
+                    <label class="block mb-2">Equity Loan Term (years)</label>
+                    <input type="number" id="equityLoanTerm" min="1" max="30" step="1" class="w-full" value="30">
+                </div>
+                <div>
+                    <label class="block mb-2">Equity Loan Interest Rate (%)</label>
+                    <input type="number" id="equityLoanInterestRate" min="0" max="20" step="0.01" class="w-full" value="4.5">
+                </div>
+                <div>
+                    <label class="block mb-2">Equity Loan Type</label>
+                    <select id="equityLoanType" class="w-full">
+                        <option value="variable">Variable</option>
+                        <option value="fixed">Fixed</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2">Equity Fixed Term (years, if applicable)</label>
+                    <input type="number" id="equityFixedTerm" min="1" max="10" step="1" class="w-full" value="5">
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Interest Rate Changes</h2>
+            <div id="interestRateChanges" class="space-y-2">
+                <!-- Interest rate changes will be added here -->
+            </div>
+            <button id="addInterestRateChange" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+                Add Interest Rate Change
+            </button>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Miscellaneous Repairs</h2>
+            <div id="miscRepairs" class="space-y-2">
+                <!-- Misc repairs will be added here -->
+            </div>
+            <button id="addMiscRepair" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+                Add Miscellaneous Repair
+            </button>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Extra Payments</h2>
+            <div id="extraPayments" class="space-y-2">
+                <!-- Extra payments will be added here -->
+            </div>
+            <button id="addExtraPayment" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+                Add Extra Payment
+            </button>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Depreciation Schedule</h2>
+            <p class="mb-4">Upload your depreciation schedule (XLS format) or add items manually:</p>
+            <input type="file" id="depreciationUpload" accept=".xls,.xlsx" class="mb-4">
+            <div id="depreciationItems" class="space-y-2">
+                <!-- Depreciation items will be added here -->
+            </div>
+            <button id="addDepreciationItem" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+                Add Depreciation Item
+            </button>
+        </div>
+
+        <div class="flex justify-end">
+            <button id="calculateButton" class="bg-green-500 text-white py-2 px-6 rounded-lg font-semibold hover:bg-green-600">Calculate</button>
+        </div>
+    </div>
+
+    <!-- Amortization Schedule Tab -->
+    <div id="amortization" class="tab-content">
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Loan Details Summary</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="border p-4 rounded-lg">
+                    <h3 class="font-medium text-gray-700">Primary Loan</h3>
+                    <p>Principal: $<span id="summaryLoanPrincipal">0</span></p>
+                    <p>Term: <span id="summaryLoanTerm">0</span> years</p>
+                    <p>Initial Rate: <span id="summaryLoanRate">0</span>%</p>
+                    <p>Monthly Payment: $<span id="summaryMonthlyPayment">0</span></p>
+                </div>
+                <div class="border p-4 rounded-lg" id="equityLoanSummary">
+                    <h3 class="font-medium text-gray-700">Equity Loan</h3>
+                    <p>Principal: $<span id="summaryEquityPrincipal">0</span></p>
+                    <p>Term: <span id="summaryEquityTerm">0</span> years</p>
+                    <p>Rate: <span id="summaryEquityRate">0</span>%</p>
+                    <p>Monthly Payment: $<span id="summaryEquityMonthlyPayment">0</span></p>
+                </div>
+                <div class="border p-4 rounded-lg">
+                    <h3 class="font-medium text-gray-700">Total Financing</h3>
+                    <p>Total Principal: $<span id="summaryTotalPrincipal">0</span></p>
+                    <p>Total Interest: $<span id="summaryTotalInterest">0</span></p>
+                    <p>Total Cost: $<span id="summaryTotalCost">0</span></p>
+                    <p>Initial Combined Payment: $<span id="summaryTotalMonthlyPayment">0</span></p>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="block mb-2">Select Loan:</label>
+                <select id="loanSelector" class="w-full md:w-1/3 mb-4">
+                    <option value="primary">Primary Loan</option>
+                    <option value="splitLoan1">Split Loan 1</option>
+                    <option value="splitLoan2">Split Loan 2</option>
+                    <option value="equity">Equity Loan</option>
+                    <option value="combined">Combined Loans</option>
+                </select>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table id="amortizationTable" class="min-w-full">
+                    <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Date</th>
+                        <th>Payment</th>
+                        <th>Principal</th>
+                        <th>Interest</th>
+                        <th>Balance</th>
+                        <th>Interest Rate</th>
+                    </tr>
+                    </thead>
+                    <tbody id="amortizationTableBody">
+                    <!-- Amortization data will be added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Cash Flow Tab -->
+    <div id="cashflow" class="tab-content">
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Monthly Cash Flow</h2>
+
+            <div class="flex items-center mb-4">
+                <label class="mr-2">Select Year:</label>
+                <select id="cashflowYearSelector" class="w-40">
+                    <!-- Years will be populated dynamically -->
+                </select>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table id="cashflowTable" class="min-w-full">
+                    <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Loan Payment</th>
+                        <th>Property Expenses</th>
+                        <th>Rental Income</th>
+                        <th>Net Cash Flow</th>
+                        <th>Details</th>
+                    </tr>
+                    </thead>
+                    <tbody id="cashflowTableBody">
+                    <!-- Cash flow data will be added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="expenseDetails" class="hidden bg-white rounded-lg shadow p-6 mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Expense Details: <span id="expenseDetailsMonth"></span></h2>
+                <button id="closeExpenseDetails" class="text-gray-500 hover:text-gray-700">&times;</button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table id="expenseDetailsTable" class="min-w-full">
+                    <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>Notes</th>
+                    </tr>
+                    </thead>
+                    <tbody id="expenseDetailsTableBody">
+                    <!-- Expense details will be added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Annual Summary Tab -->
+    <div id="summary" class="tab-content">
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Annual Financial Summary</h2>
+
+            <div class="overflow-x-auto">
+                <table id="annualSummaryTable" class="min-w-full">
+                    <thead>
+                    <tr>
+                        <th>Fiscal Year</th>
+                        <th>Total Expenses</th>
+                        <th>Total Income</th>
+                        <th>Interest Paid</th>
+                        <th>Principal Paid</th>
+                        <th>Depreciation</th>
+                        <th>Tax Benefit (45%)</th>
+                        <th>Net Position</th>
+                    </tr>
+                    </thead>
+                    <tbody id="annualSummaryTableBody">
+                    <!-- Annual summary data will be added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Tax Position Details</h2>
+
+            <div class="flex items-center mb-4">
+                <label class="mr-2">Select Fiscal Year:</label>
+                <select id="fiscalYearSelector" class="w-40">
+                    <!-- Fiscal years will be populated dynamically -->
+                </select>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table id="taxDetailsTable" class="min-w-full">
+                    <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>Notes</th>
+                    </tr>
+                    </thead>
+                    <tbody id="taxDetailsTableBody">
+                    <!-- Tax details will be added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Tab -->
+    <div id="dashboard" class="tab-content">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">Monthly Cash Flow</h2>
+                <div class="chart-container">
+                    <canvas id="cashflowChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">Loan Balance Over Time</h2>
+                <div class="chart-container">
+                    <canvas id="loanBalanceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">Expense Breakdown</h2>
+                <div class="chart-container">
+                    <canvas id="expenseBreakdownChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold mb-4">Annual Summary</h2>
+                <div class="chart-container">
+                    <canvas id="annualSummaryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
