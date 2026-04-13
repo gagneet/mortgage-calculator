@@ -11,6 +11,7 @@ import {
 
 const states = ['NSW', 'VIC', 'QLD'];
 
+const FREQUENCY_LABELS = { monthly: 'Month', fortnightly: 'Fortnight', weekly: 'Week' };
 const App = () => {
   const [loanAmount, setLoanAmount] = useState(700000);
   const [propertyValue, setPropertyValue] = useState(875000);
@@ -109,7 +110,7 @@ const App = () => {
           <p>LVR: {lvr.toFixed(2)}%</p>
           <p>Estimated LMI: {formatAud(estimatedLmi)}</p>
           {featureToggles.showUpfrontCosts && <p>Estimated Stamp Duty ({state}): {formatAud(stampDuty)}</p>}
-          <p>Repayment per {frequency.slice(0, -2)}: {formatAud(summary.repayment)}</p>
+          <p>Repayment per {FREQUENCY_LABELS[frequency] ?? frequency}: {formatAud(summary.repayment)}</p>
           <p>Total Interest: {formatAud(summary.totalInterest)}</p>
           <p>Total Paid: {formatAud(summary.totalPaid)}</p>
           <p>Loan paid in periods: {summary.periods}</p>

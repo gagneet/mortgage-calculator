@@ -45,12 +45,14 @@ const STATE_STAMP_DUTY_RULES = {
 };
 
 export const estimateStampDuty = (propertyValue, state) => {
+  if (!Number.isFinite(propertyValue) || propertyValue <= 0) return 0;
+
   const tiers = STATE_STAMP_DUTY_RULES[state] ?? STATE_STAMP_DUTY_RULES.NSW;
   let lower = 0;
 
   for (const tier of tiers) {
     if (propertyValue <= tier.upto) {
-      return roundToCents(tier.base + (propertyValue - lower) * tier.rate);
+      return roundToCents(Math.max(0, tier.base + (propertyValue - lower) * tier.rate));
     }
     lower = tier.upto;
   }
@@ -60,6 +62,9 @@ export const estimateStampDuty = (propertyValue, state) => {
 
 export const calculateRepayment = ({ principal, annualRate, years, frequency }) => {
   const periodsPerYear = REPAYMENTS_PER_YEAR[frequency];
+  if (!periodsPerYear || !Number.isFinite(years) || years <= 0 || !Number.isFinite(principal) || principal <= 0) {
+    return 0;
+  }
   const totalPeriods = years * periodsPerYear;
   const periodicRate = annualRate / 100 / periodsPerYear;
 
@@ -86,14 +91,17 @@ export const calculateAmortization = ({
   const periodicRate = annualRate / 100 / periodsPerYear;
   const repayment = calculateRepayment({ principal: loanAmount, annualRate, years, frequency });
 
+  const safeOffset = Math.max(0, offsetBalance);
+  const safeExtra = Math.max(0, extraRepayment);
+
   let balance = loanAmount;
   let totalInterest = 0;
   const schedule = [];
 
   for (let period = 1; period <= totalPeriods && balance > 0.01; period += 1) {
-    const interestBase = Math.max(balance - offsetBalance, 0);
+    const interestBase = Math.max(balance - safeOffset, 0);
     const interest = interestBase * periodicRate;
-    const effectiveRepayment = Math.max(repayment + extraRepayment, interest);
+    const effectiveRepayment = Math.max(repayment + safeExtra, interest);
     const principalPaid = Math.min(effectiveRepayment - interest, balance);
     balance -= principalPaid;
     totalInterest += interest;
@@ -108,7 +116,7 @@ export const calculateAmortization = ({
   }
 
   return {
-    repayment: roundToCents(repayment + extraRepayment),
+    repayment: roundToCents(repayment + safeExtra),
     totalInterest: roundToCents(totalInterest),
     totalPaid: roundToCents(loanAmount + totalInterest),
     periods: schedule.length,
