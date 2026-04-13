@@ -12,6 +12,7 @@ import {
 const states = ['NSW', 'VIC', 'QLD'];
 
 const FREQUENCY_LABELS = { monthly: 'Month', fortnightly: 'Fortnight', weekly: 'Week' };
+
 const App = () => {
   const [loanAmount, setLoanAmount] = useState(700000);
   const [propertyValue, setPropertyValue] = useState(875000);

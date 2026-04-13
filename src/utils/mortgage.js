@@ -53,7 +53,6 @@ export const estimateStampDuty = (propertyValue, state) => {
   for (const tier of tiers) {
     if (propertyValue <= tier.upto) {
       return roundToCents(Math.max(0, tier.base + (propertyValue - lower) * tier.rate));
-      return roundToCents(tier.base + (propertyValue - lower) * tier.rate);
     }
     lower = tier.upto;
   }
@@ -117,7 +116,7 @@ export const calculateAmortization = ({
   }
 
   return {
-    repayment: roundToCents(repayment + extraRepayment),
+    repayment: roundToCents(repayment + safeExtra),
     totalInterest: roundToCents(totalInterest),
     totalPaid: roundToCents(loanAmount + totalInterest),
     periods: schedule.length,

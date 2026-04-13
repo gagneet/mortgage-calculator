@@ -1,5 +1,4 @@
 import { calculateAmortization, calculateLvr, calculateRepayment, estimateLmi, estimateStampDuty } from './mortgage';
-import { calculateAmortization, calculateLvr, estimateLmi, estimateStampDuty } from './mortgage';
 
 describe('mortgage utils', () => {
   test('calculates LVR and LMI for high-LVR loans', () => {
