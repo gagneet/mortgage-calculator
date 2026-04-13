@@ -62,9 +62,9 @@ export const estimateStampDuty = (propertyValue, state) => {
 
 export const calculateRepayment = ({ principal, annualRate, years, frequency }) => {
   const periodsPerYear = REPAYMENTS_PER_YEAR[frequency];
-  if (!periodsPerYear) {
-    throw new Error(`Invalid frequency: ${frequency}. Must be one of: ${Object.keys(REPAYMENTS_PER_YEAR).join(', ')}`);
-  }
+  if (!periodsPerYear) return 0;
+  if (!principal || principal <= 0 || !years || years <= 0) return 0;
+
   const totalPeriods = years * periodsPerYear;
   const periodicRate = annualRate / 100 / periodsPerYear;
 
@@ -98,10 +98,13 @@ export const calculateAmortization = ({
   let totalInterest = 0;
   const schedule = [];
 
+  const safeExtra = Math.max(0, extraRepayment);
+  const safeOffset = Math.max(0, offsetBalance);
+
   for (let period = 1; period <= totalPeriods && balance > 0.01; period += 1) {
-    const interestBase = Math.max(balance - offsetBalance, 0);
+    const interestBase = Math.max(balance - safeOffset, 0);
     const interest = interestBase * periodicRate;
-    const effectiveRepayment = Math.max(repayment + extraRepayment, interest);
+    const effectiveRepayment = Math.max(repayment + safeExtra, interest);
     const principalPaid = Math.min(effectiveRepayment - interest, balance);
     balance -= principalPaid;
     totalInterest += interest;
@@ -116,7 +119,7 @@ export const calculateAmortization = ({
   }
 
   return {
-    repayment: roundToCents(repayment + safeExtra),
+    repayment: roundToCents(repayment + safeExtra),  // safeExtra = Math.max(0, extraRepayment)
     totalInterest: roundToCents(totalInterest),
     totalPaid: roundToCents(loanAmount + totalInterest),
     periods: schedule.length,
