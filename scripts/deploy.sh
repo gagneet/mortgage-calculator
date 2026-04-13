@@ -17,6 +17,13 @@ echo "[3/4] Building production bundle"
 npm run build
 
 echo "[4/4] Deploying to ${TARGET_DIR}"
+
+# Safety: refuse obviously dangerous targets (empty or filesystem root)
+if [[ -z "${TARGET_DIR}" || "${TARGET_DIR}" == "/" ]]; then
+  echo "ERROR: Refusing to deploy to unsafe target: '${TARGET_DIR}'"
+  exit 1
+fi
+
 mkdir -p "${TARGET_DIR}"
 rm -rf "${TARGET_DIR:?}"/*
 cp -R "${BUILD_DIR}"/* "${TARGET_DIR}"
