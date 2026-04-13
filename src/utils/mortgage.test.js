@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 import { calculateAmortization, calculateLvr, calculateRepayment, estimateLmi, estimateStampDuty } from './mortgage';
-=======
 import { calculateAmortization, calculateLvr, estimateLmi, estimateStampDuty } from './mortgage';
->>>>>>> 6b8b55037ab20bb50a50e6cf783e302d71e66f24
 
 describe('mortgage utils', () => {
   test('calculates LVR and LMI for high-LVR loans', () => {
@@ -17,7 +14,6 @@ describe('mortgage utils', () => {
     expect(estimateStampDuty(900000, 'QLD')).toBeGreaterThan(0);
   });
 
-<<<<<<< HEAD
   test('estimateStampDuty returns 0 for invalid inputs', () => {
     expect(estimateStampDuty(0, 'NSW')).toBe(0);
     expect(estimateStampDuty(-1000, 'NSW')).toBe(0);
@@ -31,8 +27,6 @@ describe('mortgage utils', () => {
     expect(calculateRepayment({ principal: 0, annualRate: 6, years: 30, frequency: 'monthly' })).toBe(0);
   });
 
-=======
->>>>>>> 6b8b55037ab20bb50a50e6cf783e302d71e66f24
   test('offset and extra repayment reduce term and interest', () => {
     const baseline = calculateAmortization({
       loanAmount: 700000,
@@ -55,7 +49,6 @@ describe('mortgage utils', () => {
     expect(accelerated.totalInterest).toBeLessThan(baseline.totalInterest);
     expect(accelerated.periods).toBeLessThan(baseline.periods);
   });
-<<<<<<< HEAD
 
   test('calculateAmortization clamps negative extraRepayment and offsetBalance', () => {
     const baseline = calculateAmortization({
@@ -79,6 +72,4 @@ describe('mortgage utils', () => {
     expect(withNegatives.totalInterest).toBeCloseTo(baseline.totalInterest, 0);
     expect(withNegatives.periods).toBe(baseline.periods);
   });
-=======
->>>>>>> 6b8b55037ab20bb50a50e6cf783e302d71e66f24
 });

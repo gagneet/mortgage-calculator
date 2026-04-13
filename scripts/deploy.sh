@@ -2,19 +2,13 @@
 set -euo pipefail
 
 APP_NAME="mortgage-calculator"
-<<<<<<< HEAD
-BUILD_DIR="build"
-=======
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 BUILD_DIR="${PROJECT_ROOT}/build"
->>>>>>> 6b8b55037ab20bb50a50e6cf783e302d71e66f24
 TARGET_DIR="${1:-/var/www/${APP_NAME}}"
 
 command -v npm >/dev/null 2>&1 || { echo "npm is required"; exit 1; }
 
-<<<<<<< HEAD
-=======
 if [[ ! -f "${PROJECT_ROOT}/package.json" ]]; then
   echo "Could not find package.json at ${PROJECT_ROOT}."
   echo "Make sure scripts/deploy.sh is inside the project repository."
@@ -24,7 +18,6 @@ fi
 cd "${PROJECT_ROOT}"
 
 echo "Deploying from project root: ${PROJECT_ROOT}"
->>>>>>> 6b8b55037ab20bb50a50e6cf783e302d71e66f24
 echo "[1/4] Installing dependencies with npm ci"
 npm ci
 
@@ -35,7 +28,6 @@ echo "[3/4] Building production bundle"
 npm run build
 
 echo "[4/4] Deploying to ${TARGET_DIR}"
-<<<<<<< HEAD
 
 # Safety: refuse obviously dangerous targets (empty or filesystem root)
 if [[ -z "${TARGET_DIR}" || "${TARGET_DIR}" == "/" ]]; then
@@ -43,8 +35,6 @@ if [[ -z "${TARGET_DIR}" || "${TARGET_DIR}" == "/" ]]; then
   exit 1
 fi
 
-=======
->>>>>>> 6b8b55037ab20bb50a50e6cf783e302d71e66f24
 mkdir -p "${TARGET_DIR}"
 rm -rf "${TARGET_DIR:?}"/*
 cp -R "${BUILD_DIR}"/* "${TARGET_DIR}"
