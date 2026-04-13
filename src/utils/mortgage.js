@@ -82,6 +82,9 @@ export const calculateAmortization = ({
   extraRepayment = 0,
 }) => {
   const periodsPerYear = REPAYMENTS_PER_YEAR[frequency];
+  if (!periodsPerYear) {
+    throw new Error(`Invalid frequency: ${frequency}. Must be one of: ${Object.keys(REPAYMENTS_PER_YEAR).join(', ')}`);
+  }
   const totalPeriods = years * periodsPerYear;
   const periodicRate = annualRate / 100 / periodsPerYear;
   const repayment = calculateRepayment({ principal: loanAmount, annualRate, years, frequency });
