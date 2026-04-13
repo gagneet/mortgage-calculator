@@ -44,7 +44,7 @@ const App = () => {
         offsetBalance: featureToggles.showOffsetAccount ? offsetBalance : 0,
         extraRepayment: featureToggles.showExtraRepayment ? extraRepayment : 0,
       }),
-    [principal, annualRate, termYears, frequency, offsetBalance, extraRepayment, state, includeLmi]
+    [principal, annualRate, termYears, frequency, offsetBalance, extraRepayment]
   );
 
   return (
