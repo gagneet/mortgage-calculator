@@ -1,232 +1,137 @@
-import React, { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import React, { useMemo, useState } from 'react';
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { featureToggles } from './config/features';
+import {
+  calculateAmortization,
+  calculateLvr,
+  estimateLmi,
+  estimateStampDuty,
+  formatAud,
+} from './utils/mortgage';
 
-const MortgageCalculator = () => {
-  // Basic state for loan inputs
-  const [loanAmount, setLoanAmount] = useState(300000);
-  const [initialRate, setInitialRate] = useState(4.5);
-  const [loanTermYears, setLoanTermYears] = useState(30);
-  
-  // State for mortgage calculation results
-  const [loanSummary, setLoanSummary] = useState(null);
-  const [amortizationSchedule, setAmortizationSchedule] = useState([]);
-  
-  // Utility function to format currency values
-  const formatCurrency = (value) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
-  };
+const states = ['NSW', 'VIC', 'QLD'];
 
-  // Utility function to calculate EMI (Equated Monthly Installment)
-  const calculateEMI = (principal, annualInterestRate, remainingMonths) => {
-    const monthlyRate = annualInterestRate / 100 / 12;
-    
-    // If interest rate is 0, just divide principal by total payments
-    if (monthlyRate === 0) {
-      return principal / remainingMonths;
-    }
-    
-    // Standard EMI formula
-    return principal * 
-      monthlyRate * 
-      Math.pow(1 + monthlyRate, remainingMonths) / 
-      (Math.pow(1 + monthlyRate, remainingMonths) - 1);
-  };
-  
-  // Main function to calculate the mortgage
-  const calculateMortgage = () => {
-    // Basic loan parameters
-    const totalMonths = loanTermYears * 12;
-    const initialEMI = calculateEMI(loanAmount, initialRate, totalMonths);
-    
-    // Calculate the amortization schedule
-    let remainingPrincipal = loanAmount;
-    let currentMonth = 1;
-    let totalInterestPaid = 0;
-    let currentRate = initialRate;
-    let remainingMonths = totalMonths;
-    let currentEMI = initialEMI;
-    let schedule = [];
-    
-    // Process month by month until loan is fully paid
-    while (remainingPrincipal > 0.01 && remainingMonths > 0) {
-      // Calculate interest portion with current rate
-      const interestAmount = remainingPrincipal * (currentRate / 100 / 12);
-      
-      // Calculate principal portion (EMI minus interest)
-      const principalAmount = Math.min(currentEMI - interestAmount, remainingPrincipal);
-      
-      // Update remaining principal
-      remainingPrincipal = remainingPrincipal - principalAmount;
-      
-      // Update total interest paid
-      totalInterestPaid += interestAmount;
-      
-      // Add to schedule
-      schedule.push({
-        month: currentMonth,
-        payment: currentEMI,
-        principalPaid: principalAmount,
-        interestPaid: interestAmount,
-        remainingPrincipal: remainingPrincipal,
-        interestRate: currentRate
-      });
-      
-      currentMonth += 1;
-      remainingMonths -= 1;
-    }
-    
-    // Calculate interest paid
-    const totalInterest = totalInterestPaid;
-    
-    // Prepare loan summary
-    const summary = {
-      loanAmount: loanAmount,
-      interestRate: initialRate,
-      payment: initialEMI,
-      loanTerm: loanTermYears,
-      totalInterest: totalInterest,
-      totalPaid: loanAmount + totalInterest
-    };
-    
-    // Update state with calculation results
-    setLoanSummary(summary);
-    setAmortizationSchedule(schedule);
-  };
-  
+const App = () => {
+  const [loanAmount, setLoanAmount] = useState(700000);
+  const [propertyValue, setPropertyValue] = useState(875000);
+  const [annualRate, setAnnualRate] = useState(6.1);
+  const [termYears, setTermYears] = useState(30);
+  const [frequency, setFrequency] = useState('fortnightly');
+  const [offsetBalance, setOffsetBalance] = useState(15000);
+  const [extraRepayment, setExtraRepayment] = useState(0);
+  const [state, setState] = useState('NSW');
+  const [includeLmi, setIncludeLmi] = useState(true);
+
+  const lvr = useMemo(() => calculateLvr(loanAmount, propertyValue), [loanAmount, propertyValue]);
+  const estimatedLmi = useMemo(() => estimateLmi(loanAmount, lvr), [loanAmount, lvr]);
+  const stampDuty = useMemo(() => estimateStampDuty(propertyValue, state), [propertyValue, state]);
+
+  const principal = loanAmount + (includeLmi ? estimatedLmi : 0);
+
+  const summary = useMemo(
+    () =>
+      calculateAmortization({
+        loanAmount: principal,
+        annualRate,
+        years: termYears,
+        frequency,
+        offsetBalance: featureToggles.showOffsetAccount ? offsetBalance : 0,
+        extraRepayment: featureToggles.showExtraRepayment ? extraRepayment : 0,
+      }),
+    [principal, annualRate, termYears, frequency, offsetBalance, extraRepayment]
+  );
+
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4 text-center">Mortgage Calculator</h1>
-      
-      <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Loan Amount:</label>
-            <input 
-              type="number" 
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" 
-              value={loanAmount} 
-              onChange={(e) => setLoanAmount(parseFloat(e.target.value))} 
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Interest Rate (%):</label>
-            <input 
-              type="number" 
-              step="0.01" 
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" 
-              value={initialRate} 
-              onChange={(e) => setInitialRate(parseFloat(e.target.value))} 
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Loan Term (Years):</label>
-            <input 
-              type="number" 
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" 
-              value={loanTermYears} 
-              onChange={(e) => setLoanTermYears(parseInt(e.target.value))} 
-            />
-          </div>
+    <div className="container mx-auto max-w-6xl p-4">
+      <h1 className="mb-4 text-center text-2xl font-bold">Australian Mortgage Calculator</h1>
+      <p className="mb-6 text-center text-sm text-gray-600">
+        Supports AUD formatting, LVR/LMI estimates, stamp duty estimate, and repayment frequencies common in Australia.
+      </p>
+
+      <div className="mb-6 rounded-lg bg-white p-6 shadow-md">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <label className="text-sm">
+            Loan Amount (AUD)
+            <input className="mt-1 w-full rounded border px-3 py-2" type="number" value={loanAmount} onChange={(e) => setLoanAmount(Number(e.target.value))} />
+          </label>
+          <label className="text-sm">
+            Property Value (AUD)
+            <input className="mt-1 w-full rounded border px-3 py-2" type="number" value={propertyValue} onChange={(e) => setPropertyValue(Number(e.target.value))} />
+          </label>
+          <label className="text-sm">
+            Annual Interest Rate (%)
+            <input className="mt-1 w-full rounded border px-3 py-2" type="number" step="0.01" value={annualRate} onChange={(e) => setAnnualRate(Number(e.target.value))} />
+          </label>
+          <label className="text-sm">
+            Term (years)
+            <input className="mt-1 w-full rounded border px-3 py-2" type="number" value={termYears} onChange={(e) => setTermYears(Number(e.target.value))} />
+          </label>
+          <label className="text-sm">
+            Repayment Frequency
+            <select className="mt-1 w-full rounded border px-3 py-2" value={frequency} onChange={(e) => setFrequency(e.target.value)}>
+              <option value="monthly">Monthly</option>
+              <option value="fortnightly">Fortnightly</option>
+              <option value="weekly">Weekly</option>
+            </select>
+          </label>
+          <label className="text-sm">
+            State (Stamp Duty)
+            <select className="mt-1 w-full rounded border px-3 py-2" value={state} onChange={(e) => setState(e.target.value)}>
+              {states.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+          {featureToggles.showOffsetAccount && (
+            <label className="text-sm">
+              Offset Balance (AUD)
+              <input className="mt-1 w-full rounded border px-3 py-2" type="number" value={offsetBalance} onChange={(e) => setOffsetBalance(Number(e.target.value))} />
+            </label>
+          )}
+          {featureToggles.showExtraRepayment && (
+            <label className="text-sm">
+              Extra Repayment Per Period (AUD)
+              <input className="mt-1 w-full rounded border px-3 py-2" type="number" value={extraRepayment} onChange={(e) => setExtraRepayment(Number(e.target.value))} />
+            </label>
+          )}
+          <label className="flex items-center gap-2 text-sm">
+            <input checked={includeLmi} type="checkbox" onChange={(e) => setIncludeLmi(e.target.checked)} />
+            Capitalise estimated LMI into loan
+          </label>
         </div>
-        
-        <button 
-          className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700" 
-          onClick={calculateMortgage}
-        >
-          Calculate
-        </button>
       </div>
-      
-      {/* Loan Summary */}
-      {loanSummary && (
-        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-          <h2 className="text-lg font-semibold mb-3">Loan Summary</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p><strong>Loan Amount:</strong> {formatCurrency(loanSummary.loanAmount)}</p>
-              <p><strong>Monthly Payment:</strong> {formatCurrency(loanSummary.payment)}</p>
-              <p><strong>Total Interest Paid:</strong> {formatCurrency(loanSummary.totalInterest)}</p>
-            </div>
-            <div>
-              <p><strong>Interest Rate:</strong> {loanSummary.interestRate}%</p>
-              <p><strong>Loan Term:</strong> {loanSummary.loanTerm} years</p>
-              <p><strong>Total Amount Paid:</strong> {formatCurrency(loanSummary.totalPaid)}</p>
-            </div>
-          </div>
+
+      <div className="mb-6 rounded-lg bg-white p-6 shadow-md">
+        <h2 className="mb-3 text-lg font-semibold">Loan Summary</h2>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <p>LVR: {lvr.toFixed(2)}%</p>
+          <p>Estimated LMI: {formatAud(estimatedLmi)}</p>
+          {featureToggles.showUpfrontCosts && <p>Estimated Stamp Duty ({state}): {formatAud(stampDuty)}</p>}
+          <p>Repayment per {frequency.slice(0, -2)}: {formatAud(summary.repayment)}</p>
+          <p>Total Interest: {formatAud(summary.totalInterest)}</p>
+          <p>Total Paid: {formatAud(summary.totalPaid)}</p>
+          <p>Loan paid in periods: {summary.periods}</p>
         </div>
-      )}
-      
-      {/* Loan Balance Chart */}
-      {amortizationSchedule.length > 0 && (
-        <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-          <h2 className="text-lg font-semibold mb-3">Loan Balance Over Time</h2>
-          <div className="h-64 md:h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={amortizationSchedule.map(entry => ({
-                  month: entry.month,
-                  balance: entry.remainingPrincipal
-                }))}
-                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis 
-                  tickFormatter={(value) => `$${Math.round(value / 1000)}k`}
-                />
-                <Tooltip 
-                  formatter={(value) => [`${formatCurrency(value)}`, 'Remaining Principal']}
-                  labelFormatter={(label) => `Month ${label}`} 
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="balance" 
-                  stroke="#3b82f6" 
-                  activeDot={{ r: 8 }} 
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+      </div>
+
+      <div className="mb-6 rounded-lg bg-white p-6 shadow-md">
+        <h2 className="mb-3 text-lg font-semibold">Balance Over Time</h2>
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={summary.schedule.map((entry) => ({ period: entry.period, balance: entry.balance }))}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="period" />
+              <YAxis tickFormatter={(v) => `${Math.round(v / 1000)}k`} />
+              <Tooltip formatter={(v) => formatAud(v)} />
+              <Line type="monotone" dataKey="balance" stroke="#2563eb" dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
-      )}
-      
-      {/* Amortization Schedule */}
-      {amortizationSchedule.length > 0 && (
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-semibold mb-3">Amortization Schedule</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Principal</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Interest</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Remaining Principal</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {amortizationSchedule.slice(0, 12).map((entry, index) => (
-                  <tr key={`schedule-${index}`} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="px-3 py-2 text-sm text-gray-500">{entry.month}</td>
-                    <td className="px-3 py-2 text-sm text-gray-500">{formatCurrency(entry.payment)}</td>
-                    <td className="px-3 py-2 text-sm text-gray-500">{formatCurrency(entry.principalPaid)}</td>
-                    <td className="px-3 py-2 text-sm text-gray-500">{formatCurrency(entry.interestPaid)}</td>
-                    <td className="px-3 py-2 text-sm text-gray-500">{formatCurrency(entry.remainingPrincipal)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {amortizationSchedule.length > 12 && (
-              <p className="mt-2 text-sm text-gray-500">Showing first 12 months of {amortizationSchedule.length} total months.</p>
-            )}
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
 
-export default MortgageCalculator;
+export default App;
