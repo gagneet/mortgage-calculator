@@ -11,7 +11,6 @@ import {
 
 const states = ['NSW', 'VIC', 'QLD'];
 
-const FREQUENCY_LABELS = { monthly: 'Month', fortnightly: 'Fortnight', weekly: 'Week' };
 const App = () => {
   const [loanAmount, setLoanAmount] = useState(700000);
   const [propertyValue, setPropertyValue] = useState(875000);
@@ -39,7 +38,7 @@ const App = () => {
         offsetBalance: featureToggles.showOffsetAccount ? offsetBalance : 0,
         extraRepayment: featureToggles.showExtraRepayment ? extraRepayment : 0,
       }),
-    [principal, annualRate, termYears, frequency, offsetBalance, extraRepayment]
+    [principal, annualRate, termYears, frequency, offsetBalance, extraRepayment, state, includeLmi]
   );
 
   return (

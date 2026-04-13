@@ -62,8 +62,8 @@ export const estimateStampDuty = (propertyValue, state) => {
 
 export const calculateRepayment = ({ principal, annualRate, years, frequency }) => {
   const periodsPerYear = REPAYMENTS_PER_YEAR[frequency];
-  if (!periodsPerYear || !Number.isFinite(years) || years <= 0 || !Number.isFinite(principal) || principal <= 0) {
-    return 0;
+  if (!periodsPerYear) {
+    throw new Error(`Invalid frequency: ${frequency}. Must be one of: ${Object.keys(REPAYMENTS_PER_YEAR).join(', ')}`);
   }
   const totalPeriods = years * periodsPerYear;
   const periodicRate = annualRate / 100 / periodsPerYear;
@@ -87,21 +87,21 @@ export const calculateAmortization = ({
   extraRepayment = 0,
 }) => {
   const periodsPerYear = REPAYMENTS_PER_YEAR[frequency];
+  if (!periodsPerYear) {
+    throw new Error(`Invalid frequency: ${frequency}. Must be one of: ${Object.keys(REPAYMENTS_PER_YEAR).join(', ')}`);
+  }
   const totalPeriods = years * periodsPerYear;
   const periodicRate = annualRate / 100 / periodsPerYear;
   const repayment = calculateRepayment({ principal: loanAmount, annualRate, years, frequency });
-
-  const safeOffset = Math.max(0, offsetBalance);
-  const safeExtra = Math.max(0, extraRepayment);
 
   let balance = loanAmount;
   let totalInterest = 0;
   const schedule = [];
 
   for (let period = 1; period <= totalPeriods && balance > 0.01; period += 1) {
-    const interestBase = Math.max(balance - safeOffset, 0);
+    const interestBase = Math.max(balance - offsetBalance, 0);
     const interest = interestBase * periodicRate;
-    const effectiveRepayment = Math.max(repayment + safeExtra, interest);
+    const effectiveRepayment = Math.max(repayment + extraRepayment, interest);
     const principalPaid = Math.min(effectiveRepayment - interest, balance);
     balance -= principalPaid;
     totalInterest += interest;

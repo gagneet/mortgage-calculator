@@ -2,11 +2,22 @@
 set -euo pipefail
 
 APP_NAME="mortgage-calculator"
-BUILD_DIR="build"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+BUILD_DIR="${PROJECT_ROOT}/build"
 TARGET_DIR="${1:-/var/www/${APP_NAME}}"
 
 command -v npm >/dev/null 2>&1 || { echo "npm is required"; exit 1; }
 
+if [[ ! -f "${PROJECT_ROOT}/package.json" ]]; then
+  echo "Could not find package.json at ${PROJECT_ROOT}."
+  echo "Make sure scripts/deploy.sh is inside the project repository."
+  exit 1
+fi
+
+cd "${PROJECT_ROOT}"
+
+echo "Deploying from project root: ${PROJECT_ROOT}"
 echo "[1/4] Installing dependencies with npm ci"
 npm ci
 
