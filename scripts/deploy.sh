@@ -71,6 +71,10 @@ npm run build
 echo "[4/4] Deploying to ${TARGET_DIR}"
 mkdir -p "${TARGET_DIR}"
 rm -rf "${TARGET_DIR:?}"/*
+if [[ ! -d "${BUILD_DIR}" ]]; then
+  echo "Error: Build directory not found at ${BUILD_DIR}"
+  exit 1
+fi
 cp -R "${BUILD_DIR}"/* "${TARGET_DIR}"
 
 echo "Deployment complete: ${TARGET_DIR}"
