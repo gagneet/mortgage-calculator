@@ -45,14 +45,21 @@ const STATE_STAMP_DUTY_RULES = {
 };
 
 export const estimateStampDuty = (propertyValue, state) => {
+<<<<<<< HEAD
   if (!Number.isFinite(propertyValue) || propertyValue <= 0) return 0;
 
+=======
+>>>>>>> 6b8b55037ab20bb50a50e6cf783e302d71e66f24
   const tiers = STATE_STAMP_DUTY_RULES[state] ?? STATE_STAMP_DUTY_RULES.NSW;
   let lower = 0;
 
   for (const tier of tiers) {
     if (propertyValue <= tier.upto) {
+<<<<<<< HEAD
       return roundToCents(Math.max(0, tier.base + (propertyValue - lower) * tier.rate));
+=======
+      return roundToCents(tier.base + (propertyValue - lower) * tier.rate);
+>>>>>>> 6b8b55037ab20bb50a50e6cf783e302d71e66f24
     }
     lower = tier.upto;
   }
@@ -62,9 +69,12 @@ export const estimateStampDuty = (propertyValue, state) => {
 
 export const calculateRepayment = ({ principal, annualRate, years, frequency }) => {
   const periodsPerYear = REPAYMENTS_PER_YEAR[frequency];
+<<<<<<< HEAD
   if (!periodsPerYear || !Number.isFinite(years) || years <= 0 || !Number.isFinite(principal) || principal <= 0) {
     return 0;
   }
+=======
+>>>>>>> 6b8b55037ab20bb50a50e6cf783e302d71e66f24
   const totalPeriods = years * periodsPerYear;
   const periodicRate = annualRate / 100 / periodsPerYear;
 
@@ -91,17 +101,26 @@ export const calculateAmortization = ({
   const periodicRate = annualRate / 100 / periodsPerYear;
   const repayment = calculateRepayment({ principal: loanAmount, annualRate, years, frequency });
 
+<<<<<<< HEAD
   const safeOffset = Math.max(0, offsetBalance);
   const safeExtra = Math.max(0, extraRepayment);
 
+=======
+>>>>>>> 6b8b55037ab20bb50a50e6cf783e302d71e66f24
   let balance = loanAmount;
   let totalInterest = 0;
   const schedule = [];
 
   for (let period = 1; period <= totalPeriods && balance > 0.01; period += 1) {
+<<<<<<< HEAD
     const interestBase = Math.max(balance - safeOffset, 0);
     const interest = interestBase * periodicRate;
     const effectiveRepayment = Math.max(repayment + safeExtra, interest);
+=======
+    const interestBase = Math.max(balance - offsetBalance, 0);
+    const interest = interestBase * periodicRate;
+    const effectiveRepayment = Math.max(repayment + extraRepayment, interest);
+>>>>>>> 6b8b55037ab20bb50a50e6cf783e302d71e66f24
     const principalPaid = Math.min(effectiveRepayment - interest, balance);
     balance -= principalPaid;
     totalInterest += interest;
@@ -116,7 +135,11 @@ export const calculateAmortization = ({
   }
 
   return {
+<<<<<<< HEAD
     repayment: roundToCents(repayment + safeExtra),
+=======
+    repayment: roundToCents(repayment + extraRepayment),
+>>>>>>> 6b8b55037ab20bb50a50e6cf783e302d71e66f24
     totalInterest: roundToCents(totalInterest),
     totalPaid: roundToCents(loanAmount + totalInterest),
     periods: schedule.length,
