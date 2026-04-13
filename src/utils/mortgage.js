@@ -45,12 +45,14 @@ const STATE_STAMP_DUTY_RULES = {
 };
 
 export const estimateStampDuty = (propertyValue, state) => {
+  if (!Number.isFinite(propertyValue) || propertyValue <= 0) return 0;
+
   const tiers = STATE_STAMP_DUTY_RULES[state] ?? STATE_STAMP_DUTY_RULES.NSW;
   let lower = 0;
 
   for (const tier of tiers) {
     if (propertyValue <= tier.upto) {
-      return roundToCents(tier.base + (propertyValue - lower) * tier.rate);
+      return roundToCents(Math.max(0, tier.base + (propertyValue - lower) * tier.rate));
     }
     lower = tier.upto;
   }
@@ -114,7 +116,7 @@ export const calculateAmortization = ({
   }
 
   return {
-    repayment: roundToCents(repayment + extraRepayment),
+    repayment: roundToCents(repayment + safeExtra),
     totalInterest: roundToCents(totalInterest),
     totalPaid: roundToCents(loanAmount + totalInterest),
     periods: schedule.length,
