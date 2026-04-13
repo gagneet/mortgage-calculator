@@ -38,7 +38,7 @@ The accumulated bases for the final brackets in NSW and VIC are off by small amo
 
 NSW, VIC and QLD are hard-coded. SA, WA, TAS, ACT and NT are silently mapped to NSW rules (via `?? STATE_STAMP_DUTY_RULES.NSW`). The dropdown also only offers NSW / VIC / QLD, but any future API call or deep-link could supply an unsupported state code.
 
-### 2.4 Spurious `state` in `summary` useMemo Dependency Array
+### 2.4 Spurious `state` and `includeLmi` in `summary` useMemo Dependency Array _(Fixed)_
 
 **File:** `src/App.js:47`
 
@@ -64,6 +64,22 @@ Inputs accept any numeric value. The following produce silent wrong results or 0
 ### 2.6 No React Error Boundary
 
 If `calculateAmortization` throws (e.g., future frequency validation regression), the entire component tree unmounts with a blank screen. A top-level `<ErrorBoundary>` would show a friendly fallback.
+
+### 2.6b Missing `public/` Directory and React Entry Files _(Fixed)_
+
+`public/index.html` (the react-scripts HTML template), `src/index.js` (the React DOM entry point), `src/index.css`, `tailwind.config.js`, and `postcss.config.js` were all absent from the working tree — deleted at an earlier point in the repository's history. Without these files, `npm run build` fails with "Could not find a required file: index.html".
+
+All five files were restored from git history. **`npm run build` now compiles cleanly with zero warnings.**
+
+### 2.6c `package.json` `homepage` Field Causes Wrong Asset Paths _(Fixed)_
+
+The `homepage` field was set to the GitHub README URL (`https://github.com/gagneet/mortgage-calculator#readme`). `react-scripts` interprets this as a base path, making every asset reference in the built `index.html` use the path prefix `/gagneet/mortgage-calculator/`. A server hosting the app at `/` would return 404s for all JavaScript and CSS bundles.
+
+Fixed by setting `"homepage": "."` — this uses relative asset paths that work regardless of the server's base URL.
+
+### 2.6d Circular Self-Reference in `dependencies` _(Fixed)_
+
+`package.json` listed `"mortgage-calculator": "file:"` in `dependencies`, a package referencing itself. This resolves to the project root and silently adds it to `node_modules`. Removed.
 
 ### 2.7 `sheetjs` Is an Unused Dependency
 

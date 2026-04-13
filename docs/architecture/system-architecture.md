@@ -179,7 +179,7 @@ graph LR
 
 | Property | Value |
 |----------|-------|
-| Bundle size (gzip) | ~150 KB (React + Recharts) |
+| Bundle size (gzip) | 159 KB (measured: `npm run build`, React 19 + Recharts 2.x) |
 | Calculation complexity | O(n) where n = years × periods/year (max 1 560 for 30-yr weekly) |
 | Browser support | Modern evergreen browsers (no IE) |
 | Network calls at runtime | None (current release) |
