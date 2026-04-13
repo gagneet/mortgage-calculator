@@ -60,6 +60,9 @@ export const estimateStampDuty = (propertyValue, state) => {
 
 export const calculateRepayment = ({ principal, annualRate, years, frequency }) => {
   const periodsPerYear = REPAYMENTS_PER_YEAR[frequency];
+  if (!periodsPerYear) {
+    throw new Error(`Invalid frequency: ${frequency}. Must be one of: ${Object.keys(REPAYMENTS_PER_YEAR).join(', ')}`);
+  }
   const totalPeriods = years * periodsPerYear;
   const periodicRate = annualRate / 100 / periodsPerYear;
 
